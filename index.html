@@ -6,8 +6,8 @@
 <title>Woofies Route Planner — Castle Rock, CO</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAG45yOeB8WJx6ZgDbAAOBSgo7WMmXLapk&libraries=places"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
     --north: #C62828;
@@ -42,7 +42,6 @@
     display: flex;
   }
 
-  /* Left Sidebar */
   .sidebar {
     width: 380px;
     min-width: 380px;
@@ -100,538 +99,168 @@
   .sidebar-content {
     flex: 1;
     overflow-y: auto;
-    padding: 0;
+    padding: 20px;
   }
 
-  .sidebar-content::-webkit-scrollbar { width: 6px; }
-  .sidebar-content::-webkit-scrollbar-track { background: transparent; }
-  .sidebar-content::-webkit-scrollbar-thumb { background: var(--panel-border); border-radius: 3px; }
-
-  /* Search Section */
-  .search-section {
-    padding: 20px 24px;
-    border-bottom: 1px solid var(--panel-border);
+  .section {
+    margin-bottom: 24px;
   }
 
-  .section-title {
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    color: var(--text-dim);
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     margin-bottom: 12px;
+    font-size: 11px;
     font-weight: 600;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--text-dim);
   }
 
   .search-box {
     position: relative;
-  }
-
-  .search-box input {
-    width: 100%;
-    padding: 12px 16px 12px 42px;
-    background: var(--bg);
-    border: 1px solid var(--panel-border);
-    border-radius: 10px;
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-
-  .search-box input:focus {
-    border-color: var(--paw);
-    box-shadow: 0 0 0 3px rgba(245, 197, 66, 0.1);
-  }
-
-  .search-box input::placeholder { color: var(--text-dim); }
-
-  .search-icon {
-    position: absolute;
-    left: 14px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--text-dim);
-    font-size: 16px;
-  }
-
-  .search-btn {
-    width: 100%;
-    margin-top: 10px;
-    padding: 11px;
-    background: var(--paw);
-    color: var(--bg);
-    border: none;
-    border-radius: 10px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-    letter-spacing: 0.3px;
-  }
-
-  .search-btn:hover { background: #e6b632; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(245, 197, 66, 0.3); }
-
-  /* Result Card */
-  .result-card {
-    margin-top: 14px;
-    padding: 14px 16px;
-    border-radius: 10px;
-    display: none;
-    animation: slideIn 0.3s ease;
-  }
-
-  @keyframes slideIn {
-    from { opacity: 0; transform: translateY(-8px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  .result-card.show { display: block; }
-
-  .result-region {
-    font-family: 'Fredoka', sans-serif;
-    font-size: 18px;
-    font-weight: 600;
-    margin-bottom: 4px;
-  }
-
-  .result-detail {
-    font-size: 13px;
-    opacity: 0.85;
-    line-height: 1.5;
-  }
-
-  .result-card.north { background: rgba(217, 48, 37, 0.15); border: 1px solid rgba(217, 48, 37, 0.3); }
-  .result-card.north .result-region { color: var(--north-mid); }
-  .result-card.east { background: rgba(30, 142, 62, 0.15); border: 1px solid rgba(30, 142, 62, 0.3); }
-  .result-card.east .result-region { color: var(--east-mid); }
-  .result-card.south { background: rgba(26, 115, 232, 0.15); border: 1px solid rgba(26, 115, 232, 0.3); }
-  .result-card.south .result-region { color: var(--south-mid); }
-  .result-card.castle-rock { background: rgba(249, 171, 0, 0.15); border: 1px solid rgba(249, 171, 0, 0.3); }
-  .result-card.castle-rock .result-region { color: var(--castle-rock-mid); }
-
-  /* Legend */
-  .legend-section {
-    padding: 20px 24px;
-    border-bottom: 1px solid var(--panel-border);
-  }
-
-  .legend-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-  }
-
-  .legend-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 12px;
-    border-radius: 8px;
-    background: var(--bg);
-    cursor: pointer;
-    transition: all 0.2s;
-    border: 1px solid transparent;
-  }
-
-  .legend-item:hover { border-color: var(--panel-border); }
-  .legend-item.active { border-color: var(--paw); }
-
-  .legend-dot {
-    width: 14px;
-    height: 14px;
-    border-radius: 4px;
-    flex-shrink: 0;
-  }
-
-  .legend-label {
-    font-size: 13px;
-    font-weight: 500;
-  }
-
-  .legend-count {
-    font-size: 11px;
-    color: var(--text-dim);
-  }
-
-  /* Rings Legend */
-  .rings-legend {
-    padding: 16px 24px;
-    border-bottom: 1px solid var(--panel-border);
-  }
-
-  .rings-row {
-    display: flex;
-    gap: 6px;
-    align-items: center;
-    flex-wrap: wrap;
-    margin-top: 8px;
-  }
-
-  .ring-chip {
-    padding: 4px 10px;
-    border-radius: 20px;
-    font-size: 11px;
-    font-weight: 600;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    color: var(--text);
-  }
-
-  .ring-chip:nth-child(2) { opacity: 0.9; }
-  .ring-chip:nth-child(3) { opacity: 0.8; }
-  .ring-chip:nth-child(4) { opacity: 0.7; }
-  .ring-chip:nth-child(5) { opacity: 0.6; }
-  .ring-chip:nth-child(6) { opacity: 0.5; }
-
-  /* Neighborhoods List */
-  .neighborhoods-section {
-    padding: 20px 24px;
-  }
-
-  .neighborhood-filter {
-    width: 100%;
-    padding: 10px 14px;
-    background: var(--bg);
-    border: 1px solid var(--panel-border);
-    border-radius: 8px;
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 13px;
-    outline: none;
     margin-bottom: 12px;
   }
 
-  .neighborhood-filter:focus { border-color: var(--paw); }
-
-  .neighborhood-list {
-    max-height: 300px;
-    overflow-y: auto;
-  }
-
-  .neighborhood-list::-webkit-scrollbar { width: 5px; }
-  .neighborhood-list::-webkit-scrollbar-track { background: transparent; }
-  .neighborhood-list::-webkit-scrollbar-thumb { background: var(--panel-border); border-radius: 3px; }
-
-  .neighborhood-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 10px;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background 0.15s;
-    font-size: 13px;
-  }
-
-  .neighborhood-item:hover { background: var(--bg); }
-
-  .neighborhood-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-
-  .neighborhood-name { flex: 1; }
-
-  .neighborhood-dist {
-    font-size: 11px;
-    color: var(--text-dim);
-    white-space: nowrap;
-  }
-
-  /* Stops Panel */
-  .stops-section {
-    padding: 20px 24px;
-    border-bottom: 1px solid var(--panel-border);
-  }
-
-  .stops-list {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    margin-top: 8px;
-    max-height: 180px;
-    overflow-y: auto;
-  }
-
-  .stop-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 12px;
-    background: var(--bg);
-    border-radius: 8px;
-    font-size: 13px;
-  }
-
-  .stop-num {
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--bg);
-    flex-shrink: 0;
-  }
-
-  .stop-info { flex: 1; }
-  .stop-addr { font-size: 12px; color: var(--text-dim); }
-
-  .stop-remove {
-    background: none;
-    border: none;
-    color: var(--text-dim);
-    cursor: pointer;
-    font-size: 16px;
-    padding: 2px 6px;
-    border-radius: 4px;
-    transition: all 0.15s;
-  }
-
-  .stop-remove:hover { color: var(--accent); background: rgba(233, 69, 96, 0.1); }
-
-  .clear-stops-btn {
-    margin-top: 8px;
-    padding: 8px;
+  .search-input {
     width: 100%;
-    background: rgba(233, 69, 96, 0.1);
-    border: 1px solid rgba(233, 69, 96, 0.2);
-    border-radius: 8px;
-    color: var(--accent);
+    padding: 12px 40px 12px 16px;
+    border: 2px solid var(--panel-border);
+    border-radius: 12px;
+    font-size: 15px;
     font-family: 'DM Sans', sans-serif;
-    font-size: 12px;
-    font-weight: 500;
+    transition: all 0.2s;
+    background: white;
+  }
+
+  .search-input:focus {
+    outline: none;
+    border-color: var(--paw);
+    box-shadow: 0 0 0 3px rgba(212, 131, 10, 0.1);
+  }
+
+  .search-icon {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-dim);
+  }
+
+  .btn {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--paw);
+    color: white;
+  }
+
+  .btn:hover {
+    background: #c17509;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(212, 131, 10, 0.3);
+  }
+
+  .result-box {
+    padding: 14px;
+    border-radius: 12px;
+    margin-top: 12px;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .result-box.error {
+    background: #fee;
+    color: #c33;
+    border: 1px solid #fcc;
+  }
+
+  .result-box.success {
+    background: #efe;
+    color: #363;
+    border: 1px solid #cfc;
+  }
+
+  .region-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 12px;
+  }
+
+  .region-card {
+    padding: 12px;
+    border-radius: 10px;
+    border: 2px solid;
     cursor: pointer;
     transition: all 0.2s;
   }
 
-  .clear-stops-btn:hover { background: rgba(233, 69, 96, 0.2); }
-
-  .no-stops {
-    font-size: 12px;
-    color: var(--text-dim);
-    text-align: center;
-    padding: 16px;
-    font-style: italic;
+  .region-card.north {
+    border-color: var(--north);
+    background: var(--north-light);
   }
 
-  /* Map Area */
-  .map-container {
-    flex: 1;
-    position: relative;
+  .region-card.east {
+    border-color: var(--east);
+    background: var(--east-light);
+  }
+
+  .region-card.south {
+    border-color: var(--south);
+    background: var(--south-light);
+  }
+
+  .region-card.castle-rock {
+    border-color: var(--castle-rock);
+    background: var(--castle-rock-light);
+  }
+
+  .region-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+
+  .region-name {
+    font-weight: 600;
+    font-size: 13px;
+    margin-bottom: 4px;
+  }
+
+  .region-card.north .region-name { color: var(--north); }
+  .region-card.east .region-name { color: var(--east); }
+  .region-card.south .region-name { color: var(--south); }
+  .region-card.castle-rock .region-name { color: var(--castle-rock); }
+
+  .region-count {
+    font-size: 11px;
+    color: var(--text-dim);
   }
 
   #map {
-    width: 100%;
-    height: 100%;
+    flex: 1;
+    height: 100vh;
   }
 
-  /* Map Controls Overlay */
-  .map-controls {
-    position: absolute;
-    top: 16px;
-    right: 16px;
-    z-index: 999;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .map-ctrl-btn {
-    width: 40px;
-    height: 40px;
-    background: var(--panel);
+  .pac-container {
+    z-index: 10000 !important;
+    border-radius: 8px;
+    margin-top: 4px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     border: 1px solid var(--panel-border);
-    border-radius: 10px;
-    color: var(--text);
-    font-size: 18px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  }
-
-  .map-ctrl-btn:hover { background: var(--bg); border-color: var(--paw); }
-  .map-ctrl-btn.active { background: var(--paw); color: var(--bg); border-color: var(--paw); }
-
-  /* Info tooltip on map */
-  .leaflet-popup-content-wrapper {
-    background: #ffffff !important;
-    color: var(--text) !important;
-    border-radius: 10px !important;
-    border: 1px solid var(--panel-border) !important;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.12) !important;
-  }
-
-  .leaflet-popup-tip { background: #ffffff !important; }
-
-  .leaflet-popup-content {
-    margin: 12px 16px !important;
-    font-family: 'DM Sans', sans-serif !important;
-    font-size: 13px !important;
-    line-height: 1.5 !important;
-  }
-
-  .popup-title {
-    font-family: 'Fredoka', sans-serif;
-    font-size: 15px;
-    font-weight: 600;
-    margin-bottom: 4px;
-  }
-
-  .popup-region {
-    font-size: 12px;
-    padding: 2px 8px;
-    border-radius: 4px;
-    display: inline-block;
-    margin-bottom: 4px;
-    font-weight: 500;
-  }
-
-  .popup-dist { font-size: 12px; color: var(--text-dim); }
-
-  .popup-add-btn {
-    margin-top: 8px;
-    padding: 6px 12px;
-    background: var(--paw);
-    color: var(--bg);
-    border: none;
-    border-radius: 6px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    width: 100%;
-    transition: background 0.2s;
-  }
-
-  .popup-add-btn:hover { background: #e6b632; }
-
-  /* Loading state */
-  .loading-overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(244, 245, 247, 0.92);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 9999;
-    transition: opacity 0.5s;
-  }
-
-  .loading-overlay.hidden { opacity: 0; pointer-events: none; }
-
-  .loading-spinner {
-    text-align: center;
-  }
-
-  .loading-spinner .paw {
-    font-size: 48px;
-    animation: bounce 1s ease infinite;
-  }
-
-  .loading-spinner p {
-    margin-top: 12px;
-    color: var(--text-dim);
-    font-size: 14px;
-  }
-
-  @keyframes bounce {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-12px); }
-  }
-
-  /* HQ Marker */
-  .hq-marker {
-    background: var(--paw);
-    border: 3px solid #fff;
-    border-radius: 50%;
-    width: 20px;
-    height: 20px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.4), 0 0 20px rgba(245, 197, 66, 0.4);
-  }
-
-  .leaflet-control-zoom { display: none !important; }
-
-  /* Toggle sidebar on mobile */
-  .sidebar-toggle {
-    display: none;
-    position: absolute;
-    top: 16px;
-    left: 16px;
-    z-index: 1001;
-    width: 44px;
-    height: 44px;
-    background: var(--panel);
-    border: 1px solid var(--panel-border);
-    border-radius: 10px;
-    color: var(--paw);
-    font-size: 22px;
-    cursor: pointer;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  }
-
-  @media (max-width: 768px) {
-    .sidebar { position: absolute; left: -380px; z-index: 1001; transition: left 0.3s; height: 100vh; }
-    .sidebar.open { left: 0; }
-    .sidebar-toggle { display: flex; }
-  }
-
-  /* Stats bar */
-  .stats-bar {
-    position: absolute;
-    bottom: 16px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 999;
-    display: flex;
-    gap: 12px;
-    background: var(--panel);
-    border: 1px solid var(--panel-border);
-    border-radius: 12px;
-    padding: 12px 20px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
-  }
-
-  .stat-item {
-    text-align: center;
-  }
-
-  .stat-value {
-    font-family: 'Fredoka', sans-serif;
-    font-size: 20px;
-    font-weight: 700;
-    color: var(--paw);
-  }
-
-  .stat-label {
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: var(--text-dim);
-  }
-
-  .stat-divider {
-    width: 1px;
-    background: var(--panel-border);
   }
 </style>
 </head>
 <body>
 
-<button class="sidebar-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
-
-<aside class="sidebar">
+<div class="sidebar">
   <div class="sidebar-header">
     <div class="logo-row">
       <div class="logo-icon">🐾</div>
@@ -641,240 +270,112 @@
   </div>
 
   <div class="sidebar-content">
-    <!-- Address Lookup -->
-    <div class="search-section">
-      <div class="section-title">📍 Address Lookup</div>
+    <div class="section">
+      <div class="section-header">
+        📍 Address Lookup
+      </div>
       <div class="search-box">
-        <span class="search-icon">⌕</span>
-        <input type="text" id="addressInput" placeholder="Enter address (e.g., 123 Main St, Parker)" onkeydown="if(event.key==='Enter')lookupAddress()">
+        <input 
+          type="text" 
+          id="addressInput" 
+          class="search-input" 
+          placeholder="Enter address (e.g., 123 Main St, Parker)"
+        />
+        <span class="search-icon">🔍</span>
       </div>
-      <button class="search-btn" onclick="lookupAddress()">Find Region & Distance</button>
-      <div class="result-card" id="resultCard">
-        <div class="result-region" id="resultRegion"></div>
-        <div class="result-detail" id="resultDetail"></div>
-      </div>
+      <button class="btn" onclick="lookupAddress()">Find Region & Distance</button>
+      <div id="result"></div>
     </div>
 
-    <!-- Route Stops -->
-    <div class="stops-section">
-      <div class="section-title">🚐 Today's Route Stops</div>
-      <div class="stops-list" id="stopsList">
-        <div class="no-stops" id="noStops">Click neighborhoods or search addresses to build a route</div>
+    <div class="section">
+      <div class="section-header">
+        🗺️ Service Regions
       </div>
-      <button class="clear-stops-btn" id="clearBtn" onclick="clearStops()" style="display:none">Clear All Stops</button>
-    </div>
-
-    <!-- Region Legend -->
-    <div class="legend-section">
-      <div class="section-title">🗺️ Service Regions</div>
-      <div class="legend-grid">
-        <div class="legend-item active" data-region="north" onclick="toggleRegion('north', this)">
-          <div class="legend-dot" style="background:var(--north)"></div>
-          <div>
-            <div class="legend-label">North</div>
-            <div class="legend-count" id="countNorth">—</div>
-          </div>
+      <div class="region-grid">
+        <div class="region-card north">
+          <div class="region-name">North</div>
+          <div class="region-count">69 areas</div>
         </div>
-        <div class="legend-item active" data-region="east" onclick="toggleRegion('east', this)">
-          <div class="legend-dot" style="background:var(--east)"></div>
-          <div>
-            <div class="legend-label">East</div>
-            <div class="legend-count" id="countEast">—</div>
-          </div>
+        <div class="region-card east">
+          <div class="region-name">East</div>
+          <div class="region-count">70 areas</div>
         </div>
-        <div class="legend-item active" data-region="south" onclick="toggleRegion('south', this)">
-          <div class="legend-dot" style="background:var(--south)"></div>
-          <div>
-            <div class="legend-label">South</div>
-            <div class="legend-count" id="countSouth">—</div>
-          </div>
+        <div class="region-card south">
+          <div class="region-name">South</div>
+          <div class="region-count">28 areas</div>
         </div>
-        <div class="legend-item active" data-region="castle-rock" onclick="toggleRegion('castle-rock', this)">
-          <div class="legend-dot" style="background:var(--castle-rock)"></div>
-          <div>
-            <div class="legend-label">Castle Rock</div>
-            <div class="legend-count" id="countCastle-rock">—</div>
-          </div>
+        <div class="region-card castle-rock">
+          <div class="region-name">Castle Rock</div>
+          <div class="region-count">93 areas</div>
         </div>
       </div>
-    </div>
-
-    <!-- Distance Rings -->
-    <div class="rings-legend">
-      <div class="section-title">📏 Distance Rings from HQ</div>
-      <div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;">Ring color matches the region it passes through</div>
-      <div class="rings-row">
-        <span class="ring-chip">1 mi</span>
-        <span class="ring-chip">3 mi</span>
-        <span class="ring-chip">5 mi</span>
-        <span class="ring-chip">10 mi</span>
-        <span class="ring-chip">15 mi</span>
-        <span class="ring-chip">20 mi</span>
-      </div>
-      <div style="display:flex;gap:4px;margin-top:10px;align-items:center;">
-        <div style="flex:1;height:4px;border-radius:2px;background:linear-gradient(90deg, var(--north) 25%, var(--castle-rock) 25%, var(--castle-rock) 50%, var(--east) 50%, var(--east) 75%, var(--south) 75%);opacity:0.7;"></div>
-        <span style="font-size:10px;color:var(--text-dim);white-space:nowrap;">by region</span>
-      </div>
-    </div>
-
-    <!-- Intensity Key -->
-    <div style="padding:16px 24px;border-bottom:1px solid var(--panel-border);">
-      <div class="section-title">🔆 Marker Intensity (darker = farther)</div>
-      <div style="display:flex;gap:8px;margin-top:10px;align-items:center;">
-        <div style="display:flex;align-items:center;gap:5px;">
-          <div style="width:8px;height:8px;border-radius:50%;background:var(--text-dim);opacity:0.35;border:1.5px solid rgba(255,255,255,0.5);"></div>
-          <span style="font-size:10px;color:var(--text-dim);">0–3 mi</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:5px;">
-          <div style="width:10px;height:10px;border-radius:50%;background:var(--text-dim);opacity:0.55;border:1.5px solid rgba(255,255,255,0.65);"></div>
-          <span style="font-size:10px;color:var(--text-dim);">3–7 mi</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:5px;">
-          <div style="width:12px;height:12px;border-radius:50%;background:var(--text-dim);opacity:0.78;border:1.5px solid rgba(255,255,255,0.85);"></div>
-          <span style="font-size:10px;color:var(--text-dim);">7–12 mi</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:5px;">
-          <div style="width:15px;height:15px;border-radius:50%;background:var(--text);opacity:1;border:1.5px solid rgba(255,255,255,0.85);box-shadow:0 0 6px var(--text-dim);"></div>
-          <span style="font-size:10px;color:var(--text-dim);">12+ mi</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Neighborhoods -->
-    <div class="neighborhoods-section">
-      <div class="section-title">🏘️ Neighborhoods (<span id="nhoodCount">0</span>)</div>
-      <input class="neighborhood-filter" type="text" placeholder="Filter neighborhoods..." oninput="filterNeighborhoods(this.value)">
-      <div class="neighborhood-list" id="neighborhoodList"></div>
-    </div>
-  </div>
-</aside>
-
-<div class="map-container">
-  <div id="map"></div>
-
-  <div class="map-controls">
-    <button class="map-ctrl-btn" onclick="map.zoomIn()" title="Zoom in">+</button>
-    <button class="map-ctrl-btn" onclick="map.zoomOut()" title="Zoom out">−</button>
-    <button class="map-ctrl-btn" onclick="map.setView(HQ, 11)" title="Reset view">⌂</button>
-    <button class="map-ctrl-btn" id="toggleRings" onclick="toggleRingsVisibility()" title="Toggle distance rings">◎</button>
-    <button class="map-ctrl-btn" id="toggleRegions" onclick="toggleRegionsVisibility()" title="Toggle regions">▦</button>
-  </div>
-
-  <div class="stats-bar">
-    <div class="stat-item">
-      <div class="stat-value" id="statStops">0</div>
-      <div class="stat-label">Stops</div>
-    </div>
-    <div class="stat-divider"></div>
-    <div class="stat-item">
-      <div class="stat-value" id="statRegions">—</div>
-      <div class="stat-label">Regions</div>
-    </div>
-    <div class="stat-divider"></div>
-    <div class="stat-item">
-      <div class="stat-value" id="statFarthest">—</div>
-      <div class="stat-label">Farthest</div>
-    </div>
-  </div>
-
-  <div class="loading-overlay" id="loadingOverlay">
-    <div class="loading-spinner">
-      <div class="paw">🐾</div>
-      <p>Loading Woofies Route Planner...</p>
     </div>
   </div>
 </div>
 
+<div id="map"></div>
+
 <script>
-// ============== CONFIG ==============
+// ============== CONFIGURATION ==============
 const HQ = [39.3722, -104.8561]; // 201 S Wilcox St, Castle Rock
-const MILE_TO_METERS = 1609.34;
+const GOOGLE_API_KEY = 'AIzaSyAG45yOeB8WJx6ZgDbAAOBSgo7WMmXLapk';
 
-const REGION_COLORS = {
-  'north': { color: '#C62828', fill: 'rgba(198, 40, 40, 0.06)', border: 'rgba(198, 40, 40, 0.5)' },
-  'east': { color: '#2E7D32', fill: 'rgba(46, 125, 50, 0.06)', border: 'rgba(46, 125, 50, 0.5)' },
-  'south': { color: '#1565C0', fill: 'rgba(21, 101, 192, 0.06)', border: 'rgba(21, 101, 192, 0.5)' },
-  'castle-rock': { color: '#D46A00', fill: 'rgba(180, 100, 0, 0.04)', border: 'rgba(180, 100, 0, 0.5)' }
-};
-
-// Distance rings in miles
+// Distance rings (in miles)
 const RINGS = [1, 3, 5, 10, 15, 20];
 
-// ============== NEIGHBORHOODS (Exhaustive Douglas County + Elbert) ==============
+// Region colors
+const COLORS = {
+  'north': '#C62828',
+  'east': '#2E7D32', 
+  'south': '#1565C0',
+  'castle-rock': '#D46A00'
+};
+
+// ============== NEIGHBORHOODS DATA ==============
 const NEIGHBORHOODS = [
   // ==================== CASTLE ROCK (93) ====================
-  // Downtown & Historic Core
-  {name:"Castle Rock Downtown",lat:39.3742,lng:-104.8589,region:"castle-rock"},
-  {name:"Craig & Gould",lat:39.3738,lng:-104.8608,region:"castle-rock"},
-  {name:"Castle Rock Heights",lat:39.3760,lng:-104.8640,region:"castle-rock"},
-  {name:"South Town",lat:39.3700,lng:-104.8580,region:"castle-rock"},
-  {name:"Glover-Baldwin Park",lat:39.3710,lng:-104.8530,region:"castle-rock"},
-
-  // Central & West
-  {name:"Castle Highlands",lat:39.3690,lng:-104.8640,region:"castle-rock"},
-  {name:"Red Hawk",lat:39.3810,lng:-104.8710,region:"castle-rock"},
-  {name:"Sellars Gulch",lat:39.3770,lng:-104.8750,region:"castle-rock"},
-  {name:"Keene Ranch",lat:39.3680,lng:-104.8780,region:"castle-rock"},
-  {name:"Perry Park Village",lat:39.3680,lng:-104.8680,region:"castle-rock"},
-  {name:"Crystal Valley Ranch",lat:39.3580,lng:-104.8730,region:"castle-rock"},
-  {name:"Montaine",lat:39.3550,lng:-104.8810,region:"castle-rock"},
-  {name:"Castle Rock Ranch Acres",lat:39.3600,lng:-104.8650,region:"castle-rock"},
-
-  // South & Southeast
-  {name:"Founders Village",lat:39.3680,lng:-104.8370,region:"castle-rock"},
-  {name:"Castle Oaks",lat:39.3670,lng:-104.8480,region:"castle-rock"},
-  {name:"Plum Creek",lat:39.3580,lng:-104.8560,region:"castle-rock"},
-  {name:"Oakwood",lat:39.3580,lng:-104.8490,region:"castle-rock"},
-  {name:"Dawson Trails",lat:39.3530,lng:-104.8540,region:"castle-rock"},
-  {name:"Hidden Mesa",lat:39.3500,lng:-104.8620,region:"castle-rock"},
-  {name:"Castle Rock Ranches",lat:39.3450,lng:-104.8480,region:"castle-rock"},
-  {name:"Bell Mountain Ranch",lat:39.3440,lng:-104.8640,region:"castle-rock"},
-  {name:"Stone Canon Ranch",lat:39.3400,lng:-104.8560,region:"castle-rock"},
-  {name:"Baldwin Park",lat:39.3710,lng:-104.8460,region:"castle-rock"},
-  {name:"Willow Creek",lat:39.3620,lng:-104.8420,region:"castle-rock"},
-  {name:"Twin Oaks",lat:39.3560,lng:-104.8430,region:"castle-rock"},
-  {name:"Kings Ridge",lat:39.3640,lng:-104.8380,region:"castle-rock"},
-  {name:"Park Preserve",lat:39.3560,lng:-104.8620,region:"castle-rock"},
-  {name:"Castle Ridge East",lat:39.3650,lng:-104.8330,region:"castle-rock"},
-  {name:"Sellers Creek Ranch",lat:39.3510,lng:-104.8450,region:"castle-rock"},
-
-  // North & Northeast
-  {name:"Castlewood Ranch",lat:39.3850,lng:-104.8320,region:"castle-rock"},
-  {name:"Terrain",lat:39.3950,lng:-104.8540,region:"castle-rock"},
-  {name:"Sunstone Village",lat:39.3940,lng:-104.8510,region:"castle-rock"},
-  {name:"Metzler Ranch",lat:39.3980,lng:-104.8460,region:"castle-rock"},
-  {name:"Mesa",lat:39.3910,lng:-104.8600,region:"castle-rock"},
-  {name:"Castle North",lat:39.3960,lng:-104.8620,region:"castle-rock"},
-  {name:"Rhyolite",lat:39.3890,lng:-104.8700,region:"castle-rock"},
-  {name:"Coachline",lat:39.3830,lng:-104.8520,region:"castle-rock"},
-  {name:"Woodlands",lat:39.3850,lng:-104.8540,region:"castle-rock"},
-  {name:"Miller's Landing",lat:39.3860,lng:-104.8410,region:"castle-rock"},
-  {name:"Sapphire Pointe",lat:39.3765,lng:-104.8430,region:"castle-rock"},
-  {name:"Diamond Ridge",lat:39.3930,lng:-104.8320,region:"castle-rock"},
-  {name:"Canterberry Crossing",lat:39.3880,lng:-104.8370,region:"castle-rock"},
-  {name:"Cobblestone Ranch",lat:39.3820,lng:-104.8260,region:"castle-rock"},
-  {name:"Emerson Ranch",lat:39.3930,lng:-104.8300,region:"castle-rock"},
-  {name:"Castle Park Ranch",lat:39.3900,lng:-104.8260,region:"castle-rock"},
-  {name:"Timber Ridge",lat:39.3870,lng:-104.8300,region:"castle-rock"},
-  {name:"Timber Canyon",lat:39.3890,lng:-104.8330,region:"castle-rock"},
-  {name:"Pinon Soleil",lat:39.3940,lng:-104.8400,region:"castle-rock"},
-  {name:"Siena",lat:39.3970,lng:-104.8380,region:"castle-rock"},
-  {name:"The Haven",lat:39.3990,lng:-104.8520,region:"castle-rock"},
-  {name:"Escavera",lat:39.3950,lng:-104.8480,region:"castle-rock"},
-  {name:"Macanta",lat:39.4000,lng:-104.8440,region:"castle-rock"},
-  {name:"Happy Canyon",lat:39.4020,lng:-104.8350,region:"castle-rock"},
-  {name:"Cutters Ridge",lat:39.3910,lng:-104.8560,region:"castle-rock"},
-  {name:"Latigo",lat:39.3880,lng:-104.8560,region:"castle-rock"},
-
-  // Plum Creek sub-areas
-  {name:"Plum Creek — Highlands",lat:39.3560,lng:-104.8580,region:"castle-rock"},
+  {name:"Castle North",lat:39.3980,lng:-104.8825,region:"castle-rock"},
+  {name:"Terrain",lat:39.3935782,lng:-104.8191965,region:"castle-rock"},
+  {name:"Mesa",lat:39.395,lng:-104.845,region:"castle-rock"},
+  {name:"Metzler Ranch",lat:39.398,lng:-104.8325,region:"castle-rock"},
+  {name:"Emerson Ranch",lat:39.395,lng:-104.8175,region:"castle-rock"},
+  {name:"Diamond Ridge",lat:39.393,lng:-104.83,region:"castle-rock"},
+  {name:"Allen's Peak",lat:39.388,lng:-104.83,region:"castle-rock"},
+  {name:"Crystal Valley Ranch",lat:39.382,lng:-104.825,region:"castle-rock"},
+  {name:"Founders Village",lat:39.3787,lng:-104.8245,region:"castle-rock"},
+  {name:"Lagae Estates",lat:39.375,lng:-104.815,region:"castle-rock"},
+  {name:"Crystal Oaks",lat:39.385,lng:-104.82,region:"castle-rock"},
+  {name:"Castle Pines Vlg S",lat:39.365,lng:-104.89,region:"castle-rock"},
+  {name:"Ridgeline",lat:39.368,lng:-104.875,region:"castle-rock"},
+  {name:"Castle Vista",lat:39.363,lng:-104.865,region:"castle-rock"},
+  {name:"Caprice",lat:39.360,lng:-104.855,region:"castle-rock"},
+  {name:"Gateway Mesa",lat:39.358,lng:-104.87,region:"castle-rock"},
+  {name:"Cobblestone Ranch",lat:39.371,lng:-104.86,region:"castle-rock"},
+  {name:"Crystal Valley",lat:39.375,lng:-104.825,region:"castle-rock"},
+  {name:"Stonecrest",lat:39.365,lng:-104.84,region:"castle-rock"},
+  {name:"Montaine",lat:39.362,lng:-104.83,region:"castle-rock"},
+  {name:"Southdown Village",lat:39.355,lng:-104.845,region:"castle-rock"},
+  {name:"Pradera West",lat:39.350,lng:-104.850,region:"castle-rock"},
+  {name:"Red Hawk Ridge",lat:39.348,lng:-104.835,region:"castle-rock"},
+  {name:"Villages East",lat:39.345,lng:-104.865,region:"castle-rock"},
+  {name:"Sapphire Pointe",lat:39.342,lng:-104.855,region:"castle-rock"},
+  {name:"Miller's Landing",lat:39.340,lng:-104.845,region:"castle-rock"},
+  {name:"Terrain West",lat:39.395,lng:-104.865,region:"castle-rock"},
+  {name:"Serengeti",lat:39.392,lng:-104.875,region:"castle-rock"},
+  {name:"Happy Canyon",lat:39.385,lng:-104.88,region:"castle-rock"},
+  {name:"Festival",lat:39.38,lng:-104.87,region:"castle-rock"},
+  {name:"Castle Oaks",lat:39.375,lng:-104.865,region:"castle-rock"},
+  {name:"Sommerset",lat:39.368,lng:-104.855,region:"castle-rock"},
+  {name:"The Retreat",lat:39.365,lng:-104.88,region:"castle-rock"},
+  {name:"Plum Creek — Main",lat:39.3505,lng:-104.8602,region:"castle-rock"},
+  {name:"Plum Creek — Brookside",lat:39.3520,lng:-104.8550,region:"castle-rock"},
+  {name:"Plum Creek — Traditions",lat:39.3480,lng:-104.8620,region:"castle-rock"},
+  {name:"Plum Creek — Ridge",lat:39.3510,lng:-104.8480,region:"castle-rock"},
   {name:"Plum Creek — Peninsula",lat:39.3540,lng:-104.8520,region:"castle-rock"},
   {name:"Plum Creek — Fairways",lat:39.3570,lng:-104.8500,region:"castle-rock"},
   {name:"Plum Creek — Augusta Pt",lat:39.3590,lng:-104.8540,region:"castle-rock"},
   {name:"Plum Creek — Ryder Cup",lat:39.3550,lng:-104.8570,region:"castle-rock"},
   {name:"Plum Creek — Players Xing",lat:39.3600,lng:-104.8510,region:"castle-rock"},
-
-  // THE MEADOWS — 32 sub-neighborhoods (Wikipedia + HOA data)
   {name:"Meadows — Alpine Ridge",lat:39.384,lng:-104.908,region:"castle-rock"},
   {name:"Meadows — High Prairie",lat:39.386,lng:-104.902,region:"castle-rock"},
   {name:"Meadows — Tyler Park",lat:39.396,lng:-104.896,region:"castle-rock"},
@@ -907,8 +408,24 @@ const NEIGHBORHOODS = [
   {name:"Meadows — Blacktail",lat:39.411,lng:-104.897,region:"castle-rock"},
   {name:"Meadows — Azure",lat:39.393,lng:-104.9,region:"castle-rock"},
   {name:"Meadows — Cyan Circle",lat:39.412,lng:-104.906,region:"castle-rock"},
+  {name:"Castle Rock Downtown",lat:39.3722,lng:-104.8561,region:"castle-rock"},
+  {name:"Rock Ridge",lat:39.368,lng:-104.848,region:"castle-rock"},
+  {name:"Crowfoot Valley",lat:39.361,lng:-104.842,region:"castle-rock"},
+  {name:"Willow Springs",lat:39.355,lng:-104.838,region:"castle-rock"},
+  {name:"Oakwood",lat:39.378,lng:-104.852,region:"castle-rock"},
+  {name:"Broadmoor",lat:39.382,lng:-104.858,region:"castle-rock"},
+  {name:"Elk Ridge",lat:39.387,lng:-104.863,region:"castle-rock"},
+  {name:"Riverwalk",lat:39.374,lng:-104.844,region:"castle-rock"},
+  {name:"Castle Pines South",lat:39.366,lng:-104.856,region:"castle-rock"},
+  {name:"Red Hawk Village",lat:39.352,lng:-104.848,region:"castle-rock"},
+  {name:"Bellaire",lat:39.358,lng:-104.862,region:"castle-rock"},
+  {name:"Crystal Park",lat:39.363,lng:-104.869,region:"castle-rock"},
+  {name:"Castlewood Ranch",lat:39.369,lng:-104.874,region:"castle-rock"},
+  {name:"The Reserve",lat:39.375,lng:-104.881,region:"castle-rock"},
+  {name:"Village Square",lat:39.371,lng:-104.855,region:"castle-rock"},
+  {name:"Wolfensberger",lat:39.364,lng:-104.851,region:"castle-rock"},
 
-  // ==================== NORTH — HR, Castle Pines, Lone Tree (70) ====================
+  // ==================== NORTH — HR, Castle Pines, Lone Tree (69) ====================
   {name:"HR — Northridge",lat:39.5505,lng:-104.9690,region:"north"},
   {name:"HR — Falcon Hills",lat:39.5480,lng:-104.9580,region:"north"},
   {name:"HR — Richmond Pointe",lat:39.5430,lng:-104.9600,region:"north"},
@@ -1079,810 +596,204 @@ const NEIGHBORHOODS = [
   {name:"Lake Woodmoor",lat:39.1100,lng:-104.8700,region:"south"},
   {name:"Gleneagle",lat:39.0410,lng:-104.8230,region:"south"},
   {name:"Forest Lakes",lat:39.1000,lng:-104.9050,region:"south"},
-  {name:"Red Mountain Ranch",lat:39.1150,lng:-104.8950,region:"south"},
+  {name:"Red Mountain Ranch",lat:39.1150,lng:-104.8950,region:"south"}
 ];
 
-// ============== NEIGHBORHOOD POLYGON BOUNDARIES ==============
-// Each polygon is an array of [lat, lng] vertices forming a closed boundary.
-// rect(n, s, w, e) helper defines rectangular boundaries.
-// Refine with actual GIS/subdivision data for production precision.
-function rect(n, s, w, e) { return [[n,w],[n,e],[s,e],[s,w]]; }
+// ============== MAP INITIALIZATION ==============
+let map;
+let hqMarker;
+let searchMarker;
+let neighborhoodMarkers = [];
 
-const NEIGHBORHOOD_BOUNDS = {
-  // ---- CASTLE ROCK CORE (Yellow) ----
-  // North tier (39.393 – 39.403)
-  "Castle North":          rect(39.403, 39.393, -104.905, -104.860),
-  "Terrain":               rect(39.403, 39.393, -104.860, -104.850),
-  "Mesa":                  rect(39.403, 39.393, -104.850, -104.840),
-  "Metzler Ranch":         rect(39.403, 39.393, -104.840, -104.825),
-  "Emerson Ranch":         rect(39.403, 39.393, -104.825, -104.810),
-  "Diamond Ridge":         rect(39.398, 39.388, -104.838, -104.822),
-
-  // Upper-mid tier (39.385 – 39.393)
-  "Rhyolite":              rect(39.393, 39.385, -104.905, -104.873),
-  "Red Hawk":              rect(39.393, 39.378, -104.873, -104.862),
-  "Coachline":             rect(39.385, 39.378, -104.862, -104.850),
-  "Woodlands at CR":       rect(39.385, 39.378, -104.850, -104.840),
-  "The Meadows":           rect(39.415, 39.380, -104.915, -104.885),
-  "Canterberry Crossing":  rect(39.393, 39.385, -104.840, -104.825),
-  "Miller's Landing":      rect(39.393, 39.385, -104.845, -104.840),
-  "Castlewood Ranch":      rect(39.393, 39.378, -104.825, -104.810),
-  "Cobblestone Ranch":     rect(39.385, 39.378, -104.830, -104.810),
-
-  // Central tier — DOWNTOWN CORE (39.370 – 39.378)
-  // Lewis St runs N-S at approx lng -104.8607, inside Craig & Gould
-  "Sellars Gulch":         rect(39.380, 39.370, -104.905, -104.873),
-  "Craig & Gould":         rect(39.378, 39.370, -104.873, -104.856),
-  "Castle Rock Downtown":  rect(39.378, 39.370, -104.856, -104.845),
-  "Sapphire Pointe":       rect(39.378, 39.370, -104.845, -104.835),
-  "Founders Village":      rect(39.378, 39.363, -104.835, -104.810),
-
-  // South-central tier (39.360 – 39.370)
-  "Perry Park Village (CR)": rect(39.373, 39.363, -104.905, -104.873),
-  "Keene Ranch":           rect(39.370, 39.360, -104.905, -104.873),
-  "Crystal Valley Ranch":  rect(39.363, 39.350, -104.905, -104.873),
-  "Castle Oaks":           rect(39.370, 39.363, -104.873, -104.856),
-  "Castle Rock Ranch Acres": rect(39.370, 39.363, -104.856, -104.845),
-  "Plum Creek":            rect(39.363, 39.355, -104.873, -104.856),
-  "Oakwood":               rect(39.363, 39.355, -104.856, -104.835),
-
-  // South tier (39.338 – 39.355)
-  "Montaine":              rect(39.355, 39.345, -104.905, -104.873),
-  "Hidden Mesa":           rect(39.355, 39.345, -104.873, -104.855),
-  "Dawson Trails":         rect(39.355, 39.345, -104.855, -104.835),
-  "Castle Rock Ranches":   rect(39.345, 39.338, -104.905, -104.835),
-
-  // ---- NORTH REGION (Red) ----
-  // Highlands Ranch
-  "Highlands Ranch — Town Center":    rect(39.558, 39.548, -104.965, -104.940),
-  "Highlands Ranch — Northridge":     rect(39.558, 39.546, -104.980, -104.965),
-  "Highlands Ranch — Highlands Point":rect(39.550, 39.540, -104.985, -104.970),
-  "Highlands Ranch — Westridge":      rect(39.546, 39.533, -104.995, -104.975),
-  "Highlands Ranch — Eastridge":      rect(39.556, 39.543, -104.950, -104.930),
-  "Highlands Ranch — Mountain Vista": rect(39.548, 39.538, -104.945, -104.930),
-  "Highlands Ranch — Dad Clark":      rect(39.542, 39.530, -104.960, -104.942),
-  "Highlands Ranch — Firelight":      rect(39.535, 39.524, -104.980, -104.963),
-  "Highlands Ranch — Southridge":     rect(39.530, 39.518, -104.975, -104.958),
-  "Highlands Ranch — Falcon Hills":   rect(39.525, 39.512, -104.968, -104.948),
-  "Highlands Ranch — Ranch Reserve":  rect(39.522, 39.510, -104.955, -104.935),
-  "Highlands Ranch — Backcountry":    rect(39.527, 39.512, -104.930, -104.905),
-
-  // Lone Tree / Park Meadows
-  "Park Meadows Area":        rect(39.570, 39.555, -104.895, -104.870),
-  "Inverness":                rect(39.575, 39.560, -104.870, -104.845),
-  "Lincoln Station Area":     rect(39.558, 39.543, -104.880, -104.858),
-  "Lone Tree":                rect(39.528, 39.512, -104.908, -104.887),
-  "Lone Tree — RidgeGate":   rect(39.516, 39.502, -104.900, -104.878),
-  "Lone Tree — Heritage Hills": rect(39.532, 39.520, -104.885, -104.865),
-  "Acres Green":              rect(39.548, 39.535, -104.908, -104.887),
-  "Stonegate":                rect(39.550, 39.535, -104.855, -104.832),
-  "Meridian":                 rect(39.530, 39.515, -104.865, -104.842),
-
-  // Castle Pines area
-  "Castle Pines":             rect(39.470, 39.455, -104.910, -104.885),
-  "Castle Pines Village":     rect(39.480, 39.465, -104.925, -104.900),
-  "Castle Pines North":       rect(39.485, 39.470, -104.898, -104.875),
-  "Wildcat Ridge":            rect(39.468, 39.453, -104.925, -104.900),
-  "Happy Canyon":             rect(39.463, 39.447, -104.885, -104.862),
-  "Surrey Ridge":             rect(39.482, 39.468, -104.878, -104.855),
-  "The Canyons":              rect(39.463, 39.448, -104.862, -104.842),
-  "Daniels Park Area":        rect(39.478, 39.460, -104.935, -104.910),
-  "Sedalia":                  rect(39.448, 39.428, -104.970, -104.940),
-
-  // Roxborough / Sterling Ranch
-  "Roxborough":               rect(39.480, 39.462, -105.085, -105.060),
-  "Roxborough Village":       rect(39.498, 39.482, -105.078, -105.050),
-  "Roxborough Park":          rect(39.483, 39.468, -105.090, -105.065),
-  "Sterling Ranch":           rect(39.492, 39.474, -105.050, -105.025),
-  "Waterton":                 rect(39.495, 39.478, -105.065, -105.042),
-  "Chatfield Area":           rect(39.545, 39.525, -105.082, -105.055),
-
-  // ---- EAST REGION (Green) ----
-  // Parker
-  "Parker — Town Center":     rect(39.520, 39.507, -104.772, -104.750),
-  "Parker — Stonegate":       rect(39.540, 39.526, -104.758, -104.737),
-  "Parker — Timbers":         rect(39.528, 39.514, -104.793, -104.773),
-  "Parker — Lincoln Creek":   rect(39.512, 39.498, -104.770, -104.748),
-  "Parker — Stroh Ranch":     rect(39.510, 39.494, -104.748, -104.727),
-  "Parker — Pine Lane Estates": rect(39.527, 39.513, -104.730, -104.707),
-  "Parker — Canterberry":     rect(39.522, 39.508, -104.810, -104.790),
-  "Parker — Idyllwilde":      rect(39.538, 39.524, -104.744, -104.723),
-  "Parker — Motsenbocker":    rect(39.514, 39.500, -104.780, -104.758),
-  "Parker — Ponderosa":       rect(39.505, 39.490, -104.767, -104.745),
-  "Parker — Bar CK Ranch":    rect(39.502, 39.486, -104.750, -104.728),
-  "Parker — Sierra Ridge":    rect(39.496, 39.480, -104.763, -104.742),
-  "Parker — Challenge Estates": rect(39.536, 39.522, -104.722, -104.698),
-  "Parker — Heirloom":        rect(39.515, 39.500, -104.790, -104.770),
-
-  // Pinery / south Parker
-  "Pinery":                   rect(39.462, 39.445, -104.748, -104.725),
-  "Pinery — West":            rect(39.465, 39.450, -104.768, -104.748),
-  "Pinery — East":            rect(39.458, 39.440, -104.730, -104.707),
-  "Bayou Gulch":              rect(39.478, 39.460, -104.780, -104.756),
-  "Lincoln Park":             rect(39.480, 39.465, -104.760, -104.738),
-  "Paintbrush":               rect(39.493, 39.478, -104.742, -104.720),
-  "Hidden River Estates":     rect(39.452, 39.435, -104.778, -104.752),
-  "Prairie Hawk":             rect(39.448, 39.432, -104.740, -104.716),
-  "Pradera":                  rect(39.432, 39.416, -104.770, -104.745),
-
-  // Franktown / Cherry Valley
-  "Franktown":                rect(39.398, 39.378, -104.760, -104.730),
-  "Russellville Estates":     rect(39.383, 39.367, -104.742, -104.718),
-  "Cherry Valley":            rect(39.420, 39.400, -104.750, -104.725),
-
-  // Elizabeth / Elbert County
-  "Castlewood Canyon Area":   rect(39.345, 39.320, -104.760, -104.730),
-  "Elizabeth":                 rect(39.372, 39.350, -104.615, -104.580),
-  "Running Creek":             rect(39.365, 39.345, -104.635, -104.605),
-  "Spring Valley Ranch":       rect(39.355, 39.335, -104.625, -104.595),
-  "Kiowa":                     rect(39.358, 39.332, -104.480, -104.445),
-  "Elbert":                    rect(39.240, 39.215, -104.565, -104.530),
-  "Simla":                     rect(39.155, 39.132, -104.098, -104.065),
-  "Agate":                     rect(39.135, 39.108, -104.098, -104.065),
-  "Deer Trail (Elbert Co.)":   rect(39.625, 39.600, -104.398, -104.365),
-
-  // ---- SOUTH REGION (Blue) ----
-  "Tomah Road Area":           rect(39.315, 39.295, -104.905, -104.878),
-  "Castle Pines South":        rect(39.322, 39.305, -104.892, -104.865),
-  "Rainbow Falls":             rect(39.320, 39.300, -104.862, -104.838),
-  "Sage Port":                 rect(39.300, 39.280, -104.878, -104.852),
-  "Spruce Mountain":           rect(39.290, 39.272, -104.915, -104.888),
-  "Spruce Mountain Estates":   rect(39.285, 39.268, -104.905, -104.880),
-  "Dawson Ridge":              rect(39.280, 39.262, -104.868, -104.842),
-  "Red Rock Ranch":            rect(39.270, 39.252, -104.882, -104.858),
-  "Perry Park":                rect(39.268, 39.248, -104.925, -104.898),
-  "Bear Creek Estates":        rect(39.255, 39.238, -104.895, -104.872),
-  "Bear Creek Village":        rect(39.250, 39.232, -104.908, -104.882),
-  "Greenland Ranch":           rect(39.260, 39.242, -104.868, -104.840),
-  "Greenland":                 rect(39.245, 39.225, -104.875, -104.848),
-  "Pine Bluffs":               rect(39.240, 39.220, -104.862, -104.838),
-  "Larkspur":                  rect(39.232, 39.212, -104.895, -104.870),
-  "Larkspur Butte":            rect(39.228, 39.210, -104.910, -104.885),
-  "Spring Valley":             rect(39.225, 39.205, -104.882, -104.858),
-  "Palmer Lake":               rect(39.132, 39.112, -104.930, -104.905),
-  "Monument":                  rect(39.102, 39.082, -104.886, -104.858),
-  "Monument — Tri-Lakes":     rect(39.118, 39.098, -104.900, -104.873),
-  "Monument — Jackson Creek": rect(39.085, 39.065, -104.856, -104.828),
-  "Monument — Promontory Pointe": rect(39.092, 39.072, -104.872, -104.845),
-  "Woodmoor":                  rect(39.116, 39.096, -104.868, -104.840),
-  "Lake Woodmoor":             rect(39.120, 39.100, -104.882, -104.858),
-  "Gleneagle":                 rect(39.052, 39.030, -104.838, -104.810),
-
-  // ---- ADDITIONAL CASTLE ROCK ----
-  "Sellers Creek Ranch":       rect(39.358, 39.345, -104.855, -104.835),
-  "Castle Highlands":          rect(39.375, 39.363, -104.873, -104.856),
-  "South Town":                rect(39.373, 39.365, -104.865, -104.845),
-  "Castle Rock Heights":       rect(39.380, 39.373, -104.873, -104.856),
-  "Glover-Baldwin Park":       rect(39.375, 39.367, -104.860, -104.845),
-  "Baldwin Park":              rect(39.375, 39.367, -104.852, -104.838),
-  "Willow Creek":              rect(39.368, 39.355, -104.850, -104.832),
-  "Twin Oaks":                 rect(39.362, 39.350, -104.850, -104.832),
-  "Kings Ridge":               rect(39.370, 39.360, -104.845, -104.828),
-  "Stone Canon Ranch":         rect(39.348, 39.332, -104.868, -104.845),
-  "Bell Mountain Ranch":       rect(39.352, 39.338, -104.875, -104.855),
-  "Cutters Ridge":             rect(39.395, 39.388, -104.862, -104.848),
-  "Latigo":                    rect(39.392, 39.385, -104.862, -104.848),
-  "Macanta":                   rect(39.407, 39.395, -104.852, -104.835),
-  "The Haven":                 rect(39.405, 39.395, -104.860, -104.845),
-  "Escavera":                  rect(39.400, 39.390, -104.855, -104.840),
-  "Siena":                     rect(39.403, 39.393, -104.845, -104.830),
-  "Pinon Soleil":              rect(39.400, 39.390, -104.845, -104.830),
-  "Happy Canyon":              rect(39.410, 39.398, -104.842, -104.825),
-  "Castle Park Ranch":         rect(39.395, 39.385, -104.835, -104.815),
-  "Timber Ridge":              rect(39.392, 39.382, -104.838, -104.822),
-  "Timber Canyon":             rect(39.394, 39.384, -104.840, -104.825),
-  "Castle Ridge East":         rect(39.370, 39.360, -104.840, -104.820),
-
-  // ---- ADDITIONAL NORTH / HR ----
-  "HR — Canyon Ranch":         rect(39.562, 39.553, -104.972, -104.958),
-  "HR — Westridge Glen":       rect(39.542, 39.530, -104.983, -104.968),
-  "HR — Westridge Meadows":    rect(39.544, 39.533, -104.980, -104.965),
-  "HR — Westridge Knolls":     rect(39.540, 39.528, -104.990, -104.978),
-  "HR — Mansion Hills":        rect(39.537, 39.525, -104.993, -104.980),
-  "HR — Sundance":             rect(39.530, 39.518, -104.966, -104.952),
-  "HR — Stonebury":            rect(39.533, 39.522, -104.980, -104.966),
-  "HR — Southridge Vista":     rect(39.528, 39.516, -104.963, -104.948),
-  "HR — Highwoods":            rect(39.527, 39.515, -104.958, -104.942),
-  "HR — Birkdale":             rect(39.546, 39.535, -104.975, -104.960),
-  "HR — Huntington Est.":      rect(39.556, 39.545, -104.955, -104.940),
-  "HR — Clocktower":           rect(39.559, 39.549, -104.963, -104.948),
-  "HR — Carlyle Park":         rect(39.553, 39.543, -104.972, -104.957),
-  "HR — Weatherstone":         rect(39.548, 39.538, -104.963, -104.948),
-  "Lagae Ranch":               rect(39.472, 39.458, -104.892, -104.870),
-
-  // ---- ADDITIONAL EAST / PARKER ----
-  "Parker — Antelope Hts":     rect(39.512, 39.497, -104.740, -104.720),
-  "Parker — Horse Creek":      rect(39.516, 39.503, -104.736, -104.716),
-  "Parker — Horseshoe Rdg":    rect(39.518, 39.505, -104.732, -104.712),
-  "Parker — Pine Bluffs":      rect(39.510, 39.496, -104.751, -104.731),
-  "Parker — Anthology":        rect(39.506, 39.492, -104.762, -104.742),
-  "Parker — Stepping Stone":   rect(39.528, 39.515, -104.768, -104.750),
-  "Parker — Villages of Pkr":  rect(39.518, 39.504, -104.812, -104.792),
-  "Parker — Dove Village":     rect(39.545, 39.532, -104.758, -104.740),
-  "Parker — Jordan Crossing":  rect(39.542, 39.528, -104.778, -104.758),
-  "Parker — Meridian Village": rect(39.536, 39.522, -104.774, -104.754),
-  "Parker — Spirit Ridge":     rect(39.528, 39.514, -104.756, -104.736),
-  "Parker — Stonecreek Ranch": rect(39.502, 39.488, -104.755, -104.735),
-  "Parker — Reata Ridge":      rect(39.502, 39.488, -104.740, -104.718),
-  "Parker — Preston Hills":    rect(39.524, 39.510, -104.780, -104.760),
-  "Parker — Salisbury Hts":    rect(39.518, 39.504, -104.725, -104.705),
-  "Parker — Meadowlark":       rect(39.542, 39.528, -104.752, -104.733),
-  "Parker — Quail Creek":      rect(39.530, 39.516, -104.745, -104.726),
-  "Parker — Butterfield":      rect(39.504, 39.489, -104.747, -104.727),
-  "Parker — Tenderfoot":       rect(39.514, 39.500, -104.753, -104.733),
-  "Parker — Travois":          rect(39.510, 39.496, -104.768, -104.748),
-  "Pinery — Glen":             rect(39.460, 39.443, -104.762, -104.740),
-  "Colorado Golf Club":        rect(39.443, 39.427, -104.760, -104.738),
-  "High Prairie Farms":        rect(39.455, 39.440, -104.768, -104.748),
-
-  // ---- ADDITIONAL SOUTH ----
-  "Forest Lakes":              rect(39.110, 39.090, -104.918, -104.892),
-  "Red Mountain Ranch":        rect(39.125, 39.105, -104.908, -104.882),
-  "Monument — Fox Run":       rect(39.095, 39.078, -104.845, -104.820),
-};
-
-// ============== POINT-IN-POLYGON ==============
-function pointInPolygon(lat, lng, polygon) {
-  let inside = false;
-  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-    const yi = polygon[i][0], xi = polygon[i][1];
-    const yj = polygon[j][0], xj = polygon[j][1];
-    const intersect = ((yi > lat) !== (yj > lat)) &&
-      (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi);
-    if (intersect) inside = !inside;
-  }
-  return inside;
-}
-
-// ============== REGION BOUNDARY POLYGONS ==============
-const REGION_POLYGONS = {
-  'castle-rock': [
-    [39.4030, -104.9050], [39.4030, -104.8100],
-    [39.3380, -104.8100], [39.3380, -104.9050]
-  ],
-  'north': [
-    [39.5800, -105.1000], [39.5800, -104.7500],
-    [39.4030, -104.7500], [39.4030, -104.8100],
-    [39.4030, -104.9050], [39.4030, -105.1000]
-  ],
-  'east': [
-    [39.5800, -104.7500], [39.5800, -104.3000],
-    [39.1000, -104.3000], [39.1000, -104.7500],
-    [39.3380, -104.7500], [39.3380, -104.8100],
-    [39.4030, -104.8100], [39.4030, -104.7500]
-  ],
-  'south': [
-    [39.3380, -104.9050], [39.3380, -104.8100],
-    [39.3380, -104.7500], [39.1000, -104.7500],
-    [39.0000, -104.7500], [39.0000, -105.1000],
-    [39.4030, -105.1000], [39.4030, -104.9050]
-  ]
-};
-
-// ============== GLOBALS ==============
-let map, regionLayers = {}, ringLayers = [], neighborhoodMarkers = [];
-let routeStops = [];
-let ringsVisible = true, regionsVisible = true;
-
-// ============== MAP INIT ==============
 function initMap() {
-  map = L.map('map', {
-    center: HQ,
-    zoom: 11,
-    zoomControl: false,
-    attributionControl: true
-  });
-
-  // Light tile layer with clear labels
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; OpenStreetMap &copy; CARTO',
-    maxZoom: 19
+  // Create map centered on HQ
+  map = L.map('map').setView(HQ, 11);
+  
+  // Add tile layer
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors'
   }).addTo(map);
-
-  // Draw regions
-  Object.keys(REGION_POLYGONS).forEach(region => {
-    const poly = L.polygon(REGION_POLYGONS[region], {
-      color: REGION_COLORS[region].border,
-      fillColor: REGION_COLORS[region].fill,
-      fillOpacity: 1,
+  
+  // Add HQ marker
+  hqMarker = L.marker(HQ, {
+    icon: L.divIcon({
+      className: 'hq-marker',
+      html: '<div style="background:#d4830a;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:18px;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3)">🏢</div>',
+      iconSize: [32, 32]
+    })
+  }).addTo(map).bindPopup('<strong>Woofies HQ</strong><br>201 S Wilcox St');
+  
+  // Draw distance rings
+  RINGS.forEach((radius, i) => {
+    const radiusMeters = radius * 1609.34;
+    const colors = ['#C62828', '#D46A00', '#2E7D32', '#1565C0', '#9C27B0', '#424242'];
+    L.circle(HQ, {
+      radius: radiusMeters,
+      color: colors[i % colors.length],
+      fillColor: colors[i % colors.length],
+      fillOpacity: 0.05,
       weight: 2,
-      dashArray: '6, 4'
+      dashArray: '5, 5'
     }).addTo(map);
-    regionLayers[region] = poly;
-
-    // Region label
-    const center = poly.getBounds().getCenter();
-    const label = L.divIcon({
-      className: '',
-      html: `<div style="color:${REGION_COLORS[region].color};font-family:Fredoka,sans-serif;font-size:14px;font-weight:700;text-shadow:0 1px 3px rgba(255,255,255,0.9), 0 0 8px rgba(255,255,255,0.7);white-space:nowrap;letter-spacing:0.5px;text-transform:uppercase;background:rgba(255,255,255,0.6);padding:2px 8px;border-radius:4px;">${region === 'castle-rock' ? 'Castle Rock' : region.charAt(0).toUpperCase() + region.slice(1)}</div>`,
-      iconSize: [0, 0]
-    });
-    L.marker(center, { icon: label, interactive: false }).addTo(map);
   });
-
-  // Draw distance rings with region-matched colors
-  RINGS.forEach((miles, i) => {
-    const weight = 2 + (i * 0.3);
-    const opacity = 0.5 + (i * 0.08);
-    const dashArray = i === 0 ? '' : '8, 6';
-
-    // Generate points around the full circle
-    const points = [];
-    for (let deg = 0; deg <= 360; deg += 1) {
-      const pt = destinationPoint(HQ[0], HQ[1], miles, deg);
-      points.push({ lat: pt[0], lng: pt[1], bearing: deg });
-    }
-
-    // Group consecutive points by region and draw colored segments
-    let currentRegion = determineRegion(points[0].lat, points[0].lng);
-    let segment = [[points[0].lat, points[0].lng]];
-
-    for (let p = 1; p < points.length; p++) {
-      const region = determineRegion(points[p].lat, points[p].lng);
-      if (region !== currentRegion) {
-        // Close and draw current segment
-        segment.push([points[p].lat, points[p].lng]);
-        const color = REGION_COLORS[currentRegion] ? REGION_COLORS[currentRegion].color : '#888';
-        const line = L.polyline(segment, {
-          color: color,
-          weight: weight,
-          opacity: opacity,
-          dashArray: dashArray,
-          lineCap: 'round'
-        }).addTo(map);
-        ringLayers.push(line);
-        // Start new segment
-        currentRegion = region;
-        segment = [[points[p].lat, points[p].lng]];
-      } else {
-        segment.push([points[p].lat, points[p].lng]);
-      }
-    }
-    // Draw final segment
-    if (segment.length > 1) {
-      const color = REGION_COLORS[currentRegion] ? REGION_COLORS[currentRegion].color : '#888';
-      const line = L.polyline(segment, {
-        color: color,
-        weight: weight,
-        opacity: opacity,
-        dashArray: dashArray,
-        lineCap: 'round'
-      }).addTo(map);
-      ringLayers.push(line);
-    }
-
-    // Ring label at north
-    const labelPt = destinationPoint(HQ[0], HQ[1], miles, 0);
-    const labelColor = REGION_COLORS[determineRegion(labelPt[0], labelPt[1])]?.color || '#e94560';
-    const ringLabel = L.divIcon({
-      className: '',
-      html: `<div style="color:${labelColor};font-size:11px;font-weight:700;text-shadow:0 1px 3px rgba(0,0,0,0.9);font-family:DM Sans,sans-serif;background:rgba(22,33,62,0.85);padding:2px 6px;border-radius:4px;border:1px solid ${labelColor}44;">${miles} mi</div>`,
-      iconSize: [40, 16],
-      iconAnchor: [20, 8]
-    });
-    const labelMarker = L.marker(labelPt, { icon: ringLabel, interactive: false }).addTo(map);
-    ringLayers.push(labelMarker);
-  });
-
-  // HQ Marker
-  const hqIcon = L.divIcon({
-    className: '',
-    html: `<div style="position:relative;">
-      <div style="width:24px;height:24px;background:#d4830a;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.3),0 0 20px rgba(212,131,10,0.4);"></div>
-      <div style="position:absolute;top:-34px;left:50%;transform:translateX(-50%);white-space:nowrap;background:#fff;padding:5px 12px;border-radius:6px;font-family:Fredoka,sans-serif;font-size:12px;color:#d4830a;border:1px solid #e0e3e8;box-shadow:0 2px 8px rgba(0,0,0,0.1);font-weight:600;">🐾 Woofies HQ</div>
-    </div>`,
-    iconSize: [24, 24],
-    iconAnchor: [12, 12]
-  });
-  L.marker(HQ, { icon: hqIcon }).addTo(map)
-    .bindPopup(`<div class="popup-title">🐾 Woofies HQ</div><div>201 S. Wilcox St<br>Castle Rock, CO 80104</div>`);
-
-  // Plot neighborhoods
-  plotNeighborhoods();
-  buildNeighborhoodList();
-  updateCounts();
-
-  // Hide loading
-  setTimeout(() => {
-    document.getElementById('loadingOverlay').classList.add('hidden');
-  }, 800);
-}
-
-// ============== DISTANCE INTENSITY ==============
-// Returns opacity, size, glow for distance tier (darker/bolder = farther)
-function getDistanceTier(dist) {
-  if (dist <= 3)  return { tier: 'core', opacity: 0.75, size: 10, glow: 0,  label: '0–3 mi' };
-  if (dist <= 7)  return { tier: 'near', opacity: 0.85, size: 12, glow: 0,  label: '3–7 mi' };
-  if (dist <= 12) return { tier: 'mid',  opacity: 0.92, size: 13, glow: 4,  label: '7–12 mi' };
-  return                  { tier: 'far',  opacity: 1.0,  size: 15, glow: 8,  label: '12+ mi' };
-}
-
-// Blend a hex color toward darker by a factor (0 = original, 1 = black)
-function darkenColor(hex, factor) {
-  const r = parseInt(hex.slice(1,3), 16);
-  const g = parseInt(hex.slice(3,5), 16);
-  const b = parseInt(hex.slice(5,7), 16);
-  const dr = Math.round(r * (1 - factor));
-  const dg = Math.round(g * (1 - factor));
-  const db = Math.round(b * (1 - factor));
-  return `rgb(${dr},${dg},${db})`;
-}
-
-// ============== NEIGHBORHOODS ==============
-function plotNeighborhoods() {
+  
+  // Add neighborhood markers
   NEIGHBORHOODS.forEach(n => {
-    const dist = getDistance(HQ[0], HQ[1], n.lat, n.lng);
-    n.distance = dist;
-
-    const baseColor = REGION_COLORS[n.region].color;
-    const tier = getDistanceTier(dist);
-    // Darken factor: core=0 (lightest), far=0.35 (darkest)
-    const darkenFactor = tier.tier === 'core' ? 0.10 : tier.tier === 'near' ? 0.20 : tier.tier === 'mid' ? 0.32 : 0.45;
-    const markerColor = darkenColor(baseColor, darkenFactor);
-    const glowStr = tier.glow > 0 ? `,0 0 ${tier.glow}px ${markerColor}` : '';
-
-    const icon = L.divIcon({
-      className: '',
-      html: `<div style="width:${tier.size}px;height:${tier.size}px;background:${markerColor};border:2.5px solid rgba(255,255,255,0.95);border-radius:50%;opacity:${tier.opacity};box-shadow:0 1px 4px rgba(0,0,0,0.4)${glowStr};"></div>`,
-      iconSize: [tier.size, tier.size],
-      iconAnchor: [tier.size/2, tier.size/2]
-    });
-
-    const marker = L.marker([n.lat, n.lng], { icon: icon }).addTo(map);
-    marker.bindPopup(`
-      <div class="popup-title">${n.name}</div>
-      <div class="popup-region" style="background:${baseColor}22;color:${baseColor}">${formatRegion(n.region)}</div>
-      <div class="popup-dist">${dist.toFixed(1)} miles from HQ · <span style="opacity:0.7">${tier.label}</span></div>
-      <button class="popup-add-btn" onclick="addStop('${n.name}', ${n.lat}, ${n.lng}, '${n.region}')">+ Add to Route</button>
-    `);
-
-    marker.nhoodData = n;
+    const color = COLORS[n.region];
+    const marker = L.circleMarker([n.lat, n.lng], {
+      radius: 5,
+      fillColor: color,
+      color: 'white',
+      weight: 1,
+      fillOpacity: 0.7
+    }).addTo(map).bindPopup(`<strong>${n.name}</strong><br>${n.region}`);
     neighborhoodMarkers.push(marker);
   });
 }
 
-function buildNeighborhoodList() {
-  const sorted = [...NEIGHBORHOODS].sort((a, b) => a.distance - b.distance);
-  const list = document.getElementById('neighborhoodList');
-  document.getElementById('nhoodCount').textContent = sorted.length;
-
-  list.innerHTML = sorted.map(n => {
-    const baseColor = REGION_COLORS[n.region].color;
-    const tier = getDistanceTier(n.distance);
-    const darkenFactor = tier.tier === 'core' ? 0 : tier.tier === 'near' ? 0.12 : tier.tier === 'mid' ? 0.25 : 0.38;
-    const dotColor = darkenColor(baseColor, darkenFactor);
-    // Background bar: intensity increases with distance
-    const barOpacity = tier.tier === 'core' ? 0.06 : tier.tier === 'near' ? 0.10 : tier.tier === 'mid' ? 0.16 : 0.22;
-    return `<div class="neighborhood-item" onclick="flyToNeighborhood(${n.lat}, ${n.lng})" data-region="${n.region}" data-name="${n.name.toLowerCase()}" style="background:${baseColor}${Math.round(barOpacity*255).toString(16).padStart(2,'0')};">
-      <div class="neighborhood-dot" style="background:${dotColor};width:${tier.size - 2}px;height:${tier.size - 2}px;"></div>
-      <div class="neighborhood-name">${n.name}</div>
-      <div class="neighborhood-dist">${n.distance.toFixed(1)} mi</div>
-    </div>`;
-  }).join('');
-}
-
-function filterNeighborhoods(query) {
-  const items = document.querySelectorAll('.neighborhood-item');
-  const q = query.toLowerCase();
-  let count = 0;
-  items.forEach(item => {
-    const match = item.dataset.name.includes(q);
-    item.style.display = match ? '' : 'none';
-    if (match) count++;
-  });
-  document.getElementById('nhoodCount').textContent = count;
-}
-
-function flyToNeighborhood(lat, lng) {
-  map.flyTo([lat, lng], 14, { duration: 0.8 });
-  // Find and open popup
-  neighborhoodMarkers.forEach(m => {
-    if (m.nhoodData.lat === lat && m.nhoodData.lng === lng) {
-      setTimeout(() => m.openPopup(), 300);
-    }
-  });
-}
-
-// ============== GOOGLE GEOCODING API ==============
-const GOOGLE_API_KEY = 'AIzaSyCYHFmYwJH5lKL9wrhI-B8dms3G2rN9e5g';  // 👈 Replace with your key
-
-async function geocodeGoogle(address) {
+// ============== GEOCODING FUNCTIONS ==============
+async function geocodeAddress(address) {
   try {
-    const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${GOOGLE_API_KEY}`;
-    const resp = await fetch(url);
-    const data = await resp.json();
+    const response = await fetch(
+      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${GOOGLE_API_KEY}`
+    );
+    const data = await response.json();
     
     if (data.status === 'OK' && data.results.length > 0) {
       const result = data.results[0];
       return {
         lat: result.geometry.location.lat,
         lng: result.geometry.location.lng,
-        address: result.formatted_address,
-        source: 'Google'
+        formatted: result.formatted_address
       };
     } else if (data.status === 'ZERO_RESULTS') {
-      return null;
+      throw new Error('Address not found');
+    } else if (data.status === 'REQUEST_DENIED') {
+      throw new Error('Geocoding API error: ' + (data.error_message || 'REQUEST_DENIED'));
     } else {
-      console.error('Google Geocoding error:', data.status);
-      return null;
+      throw new Error('Geocoding failed: ' + data.status);
     }
-  } catch(e) {
-    console.error('Google Geocoding API failed:', e);
-    return null;
+  } catch (error) {
+    console.error('Geocoding error:', error);
+    throw error;
   }
 }
 
+function calculateDistance(lat1, lng1, lat2, lng2) {
+  const R = 3959;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLng/2) * Math.sin(dLng/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
+
+function getRegion(distance) {
+  if (distance <= 2) return { tier: 'Core', color: '#C62828' };
+  if (distance <= 5) return { tier: 'Near', color: '#D46A00' };
+  if (distance <= 10) return { tier: 'Mid', color: '#2E7D32' };
+  return { tier: 'Far', color: '#1565C0' };
+}
+
+// ============== ADDRESS LOOKUP ==============
 async function lookupAddress() {
-  const input = document.getElementById('addressInput').value.trim();
-  if (!input) return;
-
-  const card = document.getElementById('resultCard');
-  card.className = 'result-card';
-  card.style.display = 'none';
-
-  const query = input.includes('CO') || input.includes('Colorado') ? input : input + ', Colorado';
-
-  card.className = 'result-card show';
-  card.style.display = 'block';
-  card.style.background = 'rgba(245, 197, 66, 0.1)';
-  card.style.border = '1px solid rgba(245, 197, 66, 0.2)';
-  document.getElementById('resultRegion').textContent = 'Searching...';
-  document.getElementById('resultRegion').style.color = 'var(--paw)';
-  document.getElementById('resultDetail').textContent = '';
-
-  try {
-    const geo = await geocodeGoogle(query);
-
-    if (!geo) {
-      card.className = 'result-card show';
-      card.style.display = 'block';
-      card.style.background = 'rgba(233, 69, 96, 0.15)';
-      card.style.border = '1px solid rgba(233, 69, 96, 0.3)';
-      document.getElementById('resultRegion').textContent = 'Address Not Found';
-      document.getElementById('resultRegion').style.color = 'var(--accent)';
-      document.getElementById('resultDetail').textContent = 'Try: "123 Main St, Parker" or "Founders Village"';
-      return;
-    }
-
-    const lat = geo.lat;
-    const lng = geo.lng;
-    const formattedAddr = geo.address;
-    const dist = getDistance(HQ[0], HQ[1], lat, lng);
-    const region = determineRegion(lat, lng);
-    const regionName = formatRegion(region);
-    const color = REGION_COLORS[region] ? REGION_COLORS[region].color : '#888';
-
-    card.className = `result-card show ${region}`;
-    document.getElementById('resultRegion').textContent = `${regionName} Region`;
-    document.getElementById('resultDetail').innerHTML = `
-      📍 ${formattedAddr}<br>
-      📏 ${dist.toFixed(1)} miles from HQ<br>
-      🕐 ~${Math.round(dist * 2.5)} min drive estimate
-    `;
-
-    const searchIcon = L.divIcon({
-      className: '',
-      html: `<div style="width:16px;height:16px;background:${color};border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.5);"></div>`,
-      iconSize: [16, 16],
-      iconAnchor: [8, 8]
-    });
-
-    const marker = L.marker([lat, lng], { icon: searchIcon }).addTo(map);
-    marker.bindPopup(`
-      <div class="popup-title">Searched Address</div>
-      <div class="popup-region" style="background:${color}22;color:${color}">${regionName}</div>
-      <div style="font-size:12px;margin:4px 0">${formattedAddr}</div>
-      <div class="popup-dist">${dist.toFixed(1)} miles from HQ</div>
-      <button class="popup-add-btn" onclick="addStop('${input.replace(/'/g, "\\'")}', ${lat}, ${lng}, '${region}')">+ Add to Route</button>
-    `).openPopup();
-
-    map.flyTo([lat, lng], 14, { duration: 0.8 });
-
-  } catch (e) {
-    console.error('Address lookup failed:', e);
-    card.className = 'result-card show';
-    card.style.display = 'block';
-    card.style.background = 'rgba(233, 69, 96, 0.15)';
-    card.style.border = '1px solid rgba(233, 69, 96, 0.3)';
-    document.getElementById('resultRegion').textContent = 'Error';
-    document.getElementById('resultRegion').style.color = 'var(--accent)';
-    document.getElementById('resultDetail').textContent = 'Network error. Check connection and API key.';
-  }
-}
-
-// ============== ROUTE STOPS ==============
-function addStop(name, lat, lng, region) {
-  if (routeStops.length >= 15) { alert('Max 15 stops per route'); return; }
-  const dist = getDistance(HQ[0], HQ[1], lat, lng);
-  routeStops.push({ name, lat, lng, region, distance: dist });
-  renderStops();
-  map.closePopup();
-}
-
-function removeStop(index) {
-  routeStops.splice(index, 1);
-  renderStops();
-}
-
-function clearStops() {
-  routeStops = [];
-  renderStops();
-}
-
-function renderStops() {
-  const list = document.getElementById('stopsList');
-  const noStops = document.getElementById('noStops');
-  const clearBtn = document.getElementById('clearBtn');
-
-  if (routeStops.length === 0) {
-    list.innerHTML = '<div class="no-stops">Click neighborhoods or search addresses to build a route</div>';
-    clearBtn.style.display = 'none';
-    document.getElementById('statStops').textContent = '0';
-    document.getElementById('statRegions').textContent = '—';
-    document.getElementById('statFarthest').textContent = '—';
+  const input = document.getElementById('addressInput');
+  const address = input.value.trim();
+  const resultDiv = document.getElementById('result');
+  
+  if (!address) {
+    resultDiv.innerHTML = '<div class="result-box error">Please enter an address</div>';
     return;
   }
-
-  clearBtn.style.display = 'block';
-
-  list.innerHTML = routeStops.map((s, i) => {
-    const baseColor = REGION_COLORS[s.region] ? REGION_COLORS[s.region].color : '#888';
-    const tier = getDistanceTier(s.distance);
-    const darkenFactor = tier.tier === 'core' ? 0 : tier.tier === 'near' ? 0.12 : tier.tier === 'mid' ? 0.25 : 0.38;
-    const stopColor = darkenColor(baseColor, darkenFactor);
-    return `<div class="stop-item">
-      <div class="stop-num" style="background:${stopColor}">${i + 1}</div>
-      <div class="stop-info">
-        <div>${s.name}</div>
-        <div class="stop-addr">${s.distance.toFixed(1)} mi · ${formatRegion(s.region)} · ${tier.label}</div>
+  
+  resultDiv.innerHTML = '<div class="result-box">🔍 Searching...</div>';
+  
+  try {
+    const location = await geocodeAddress(address);
+    const distance = calculateDistance(HQ[0], HQ[1], location.lat, location.lng);
+    const region = getRegion(distance);
+    
+    if (searchMarker) {
+      map.removeLayer(searchMarker);
+    }
+    searchMarker = L.marker([location.lat, location.lng], {
+      icon: L.divIcon({
+        className: 'search-marker',
+        html: '<div style="background:#e94560;width:24px;height:24px;border-radius:50%;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3)"></div>',
+        iconSize: [24, 24]
+      })
+    }).addTo(map).bindPopup(`<strong>Search Result</strong><br>${location.formatted}`);
+    
+    map.setView([location.lat, location.lng], 13);
+    
+    resultDiv.innerHTML = `
+      <div class="result-box success">
+        <strong>📍 ${location.formatted}</strong><br><br>
+        <strong>Distance from HQ:</strong> ${distance.toFixed(1)} miles<br>
+        <strong>Service Tier:</strong> <span style="color:${region.color}">${region.tier}</span><br>
+        <strong>Drive Time:</strong> ~${Math.ceil(distance * 2)} minutes
       </div>
-      <button class="stop-remove" onclick="removeStop(${i})">✕</button>
-    </div>`;
-  }).join('');
-
-  // Stats
-  document.getElementById('statStops').textContent = routeStops.length;
-  const regions = [...new Set(routeStops.map(s => s.region))];
-  document.getElementById('statRegions').textContent = regions.length;
-  const farthest = Math.max(...routeStops.map(s => s.distance));
-  document.getElementById('statFarthest').textContent = farthest.toFixed(1) + 'mi';
-}
-
-// ============== TOGGLE CONTROLS ==============
-function toggleRegion(region, el) {
-  el.classList.toggle('active');
-  if (regionLayers[region]) {
-    if (el.classList.contains('active')) {
-      map.addLayer(regionLayers[region]);
-    } else {
-      map.removeLayer(regionLayers[region]);
-    }
+    `;
+  } catch (error) {
+    resultDiv.innerHTML = `
+      <div class="result-box error">
+        <strong>❌ Address Not Found</strong><br>
+        ${error.message}<br><br>
+        Try: "123 Main St, Parker" or "Founders Village"
+      </div>
+    `;
   }
-  // Toggle neighborhood markers
-  neighborhoodMarkers.forEach(m => {
-    if (m.nhoodData.region === region) {
-      if (el.classList.contains('active')) {
-        map.addLayer(m);
-      } else {
-        map.removeLayer(m);
-      }
-    }
-  });
 }
 
-function toggleRingsVisibility() {
-  ringsVisible = !ringsVisible;
-  document.getElementById('toggleRings').classList.toggle('active', ringsVisible);
-  ringLayers.forEach(r => {
-    if (ringsVisible) map.addLayer(r); else map.removeLayer(r);
-  });
-}
+// ============== AUTOCOMPLETE ==============
+let autocomplete;
 
-function toggleRegionsVisibility() {
-  regionsVisible = !regionsVisible;
-  document.getElementById('toggleRegions').classList.toggle('active', regionsVisible);
-  Object.values(regionLayers).forEach(l => {
-    if (regionsVisible) map.addLayer(l); else map.removeLayer(l);
-  });
-}
-
-// ============== UTILITIES ==============
-function getDistance(lat1, lon1, lat2, lon2) {
-  const R = 3958.8; // Earth radius in miles
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-function findNearestNeighborhood(lat, lng) {
-  // 1. Check polygon containment first (proper fix)
-  for (const n of NEIGHBORHOODS) {
-    const bounds = NEIGHBORHOOD_BOUNDS[n.name];
-    if (bounds && pointInPolygon(lat, lng, bounds)) {
-      const d = getDistance(lat, lng, n.lat, n.lng);
-      return { name: n.name, region: n.region, dist: d, method: 'polygon' };
-    }
-  }
-  // 2. Fallback to nearest center point if no polygon match
-  let closest = null;
-  let minDist = Infinity;
-  NEIGHBORHOODS.forEach(n => {
-    const d = getDistance(lat, lng, n.lat, n.lng);
-    if (d < minDist) {
-      minDist = d;
-      closest = n;
-    }
-  });
-  return closest ? { name: closest.name, region: closest.region, dist: minDist, method: 'nearest' } : null;
-}
-
-function determineRegion(lat, lng) {
-  // Castle Rock box
-  if (lat >= 39.338 && lat <= 39.403 && lng >= -104.905 && lng <= -104.810) return 'castle-rock';
-  // North
-  if (lat > 39.403 && lng < -104.750) return 'north';
-  // East (Parker, Franktown, Elbert County)
-  if (lng >= -104.810 && lat > 39.338) return 'east';
-  if (lng >= -104.750 && lat <= 39.338) return 'east';
-  // South
-  if (lat <= 39.338) return 'south';
-  return 'castle-rock';
-}
-
-function formatRegion(r) {
-  if (r === 'castle-rock') return 'Castle Rock';
-  return r.charAt(0).toUpperCase() + r.slice(1);
-}
-
-// Calculate destination point given start, distance (miles), and bearing (degrees)
-function destinationPoint(lat1, lon1, distMiles, bearingDeg) {
-  const R = 3958.8;
-  const d = distMiles / R;
-  const brng = bearingDeg * Math.PI / 180;
-  const lat1r = lat1 * Math.PI / 180;
-  const lon1r = lon1 * Math.PI / 180;
-  const lat2 = Math.asin(Math.sin(lat1r) * Math.cos(d) + Math.cos(lat1r) * Math.sin(d) * Math.cos(brng));
-  const lon2 = lon1r + Math.atan2(Math.sin(brng) * Math.sin(d) * Math.cos(lat1r), Math.cos(d) - Math.sin(lat1r) * Math.sin(lat2));
-  return [lat2 * 180 / Math.PI, lon2 * 180 / Math.PI];
-}
-
-function updateCounts() {
-  const counts = { north: 0, east: 0, south: 0, 'castle-rock': 0 };
-  NEIGHBORHOODS.forEach(n => counts[n.region]++);
-  Object.keys(counts).forEach(r => {
-    const el = document.getElementById('count' + r.charAt(0).toUpperCase() + r.slice(1));
-    if (el) el.textContent = counts[r] + ' areas';
-  });
-}
-
-// ============== INIT ==============
-document.addEventListener('DOMContentLoaded', initMap);
-// Set initial toggle states
-setTimeout(() => {
-  document.getElementById('toggleRings').classList.add('active');
-  document.getElementById('toggleRegions').classList.add('active');
-}, 100);
-</script>
-<script>
 function initAutocomplete() {
-  const input = document.getElementById("addressInput");
-  if (!input || !window.google || !window.google.maps) {
+  const input = document.getElementById('addressInput');
+  
+  if (!window.google || !window.google.maps || !window.google.maps.places) {
+    console.log('Google Places not ready, retrying...');
     setTimeout(initAutocomplete, 500);
     return;
   }
-  const autocomplete = new google.maps.places.Autocomplete(input, {
-    componentRestrictions: { country: "us" },
-    bounds: { south: 39.0, west: -105.3, north: 39.8, east: -104.3 },
-    types: ["address"]
+  
+  autocomplete = new google.maps.places.Autocomplete(input, {
+    componentRestrictions: { country: 'us' },
+    bounds: {
+      south: 39.0,
+      west: -105.3,
+      north: 39.8,
+      east: -104.3
+    },
+    types: ['address']
   });
-  autocomplete.addListener("place_changed", () => {
+  
+  autocomplete.addListener('place_changed', () => {
     const place = autocomplete.getPlace();
-    if (place.geometry) { setTimeout(lookupAddress, 100); }
+    if (place.geometry) {
+      setTimeout(lookupAddress, 100);
+    }
   });
 }
-window.addEventListener("load", () => setTimeout(initAutocomplete, 1000));
+
+// ============== INITIALIZATION ==============
+window.addEventListener('load', () => {
+  initMap();
+  setTimeout(initAutocomplete, 1000);
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  const input = document.getElementById('addressInput');
+  if (input) {
+    input.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        lookupAddress();
+      }
+    });
+  }
+});
 </script>
-</script><script></body>
+</body>
 </html>
-  
