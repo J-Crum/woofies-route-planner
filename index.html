@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Woofies Route Planner — Castle Rock, CO</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAG45yOeB8WJx6ZgDbAAOBSgo7WMmXLapk&libraries=places"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --north: #C62828;
+    --north-light: #FCEAE9;
+    --north-mid: #E53935;
+    --east: #2E7D32;
+    --east-light: #E6F4EA;
+    --east-mid: #43A047;
+    --south: #1565C0;
+    --south-light: #E8F0FE;
+    --south-mid: #1E88E5;
+    --castle-rock: #D46A00;
+    --castle-rock-light: #FEF7E0;
+    --castle-rock-mid: #FFA000;
+    --bg: #f4f5f7;
+    --panel: #ffffff;
+    --panel-border: #e0e3e8;
+    --text: #1a1a2e;
+    --text-dim: #6b7280;
+    --accent: #e94560;
+    --paw: #d4830a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+  }
+
+  .sidebar {
+    width: 380px;
+    min-width: 380px;
+    background: var(--panel);
+    border-right: 1px solid var(--panel-border);
+    box-shadow: 2px 0 12px rgba(0,0,0,0.06);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    z-index: 1000;
+  }
+
+  .sidebar-header {
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid var(--panel-border);
+    background: linear-gradient(135deg, #f8f9fb 0%, #ffffff 100%);
+  }
+
+  .logo-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 4px;
+  }
+
+  .logo-icon {
+    width: 44px;
+    height: 44px;
+    background: var(--paw);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    box-shadow: 0 4px 12px rgba(212, 131, 10, 0.25);
+  }
+
+  .logo-text {
+    font-family: 'Fredoka', sans-serif;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--paw);
+    letter-spacing: -0.5px;
+  }
+
+  .logo-sub {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-left: 56px;
+    margin-top: -2px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .sidebar-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+  }
+
+  .section {
+    margin-bottom: 24px;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  .search-box {
+    position: relative;
+    margin-bottom: 12px;
+  }
+
+  .search-input {
+    width: 100%;
+    padding: 12px 40px 12px 16px;
+    border: 2px solid var(--panel-border);
+    border-radius: 12px;
+    font-size: 15px;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.2s;
+    background: white;
+  }
+
+  .search-input:focus {
+    outline: none;
+    border-color: var(--paw);
+    box-shadow: 0 0 0 3px rgba(212, 131, 10, 0.1);
+  }
+
+  .search-icon {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-dim);
+  }
+
+  .btn {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--paw);
+    color: white;
+  }
+
+  .btn:hover {
+    background: #c17509;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(212, 131, 10, 0.3);
+  }
+
+  .result-box {
+    padding: 14px;
+    border-radius: 12px;
+    margin-top: 12px;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .result-box.error {
+    background: #fee;
+    color: #c33;
+    border: 1px solid #fcc;
+  }
+
+  .result-box.success {
+    background: #efe;
+    color: #363;
+    border: 1px solid #cfc;
+  }
+
+  .region-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 12px;
+  }
+
+  .region-card {
+    padding: 12px;
+    border-radius: 10px;
+    border: 2px solid;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .region-card.north {
+    border-color: var(--north);
+    background: var(--north-light);
+  }
+
+  .region-card.east {
+    border-color: var(--east);
+    background: var(--east-light);
+  }
+
+  .region-card.south {
+    border-color: var(--south);
+    background: var(--south-light);
+  }
+
+  .region-card.castle-rock {
+    border-color: var(--castle-rock);
+    background: var(--castle-rock-light);
+  }
+
+  .region-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+
+  .region-name {
+    font-weight: 600;
+    font-size: 13px;
+    margin-bottom: 4px;
+  }
+
+  .region-card.north .region-name { color: var(--north); }
+  .region-card.east .region-name { color: var(--east); }
+  .region-card.south .region-name { color: var(--south); }
+  .region-card.castle-rock .region-name { color: var(--castle-rock); }
+
+  .region-count {
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  #map {
+    flex: 1;
+    height: 100vh;
+  }
+
+  .pac-container {
+    z-index: 10000 !important;
+    border-radius: 8px;
+    margin-top: 4px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    border: 1px solid var(--panel-border);
+  }
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="sidebar-header">
+    <div class="logo-row">
+      <div class="logo-icon">🐾</div>
+      <div class="logo-text">Woofies</div>
+    </div>
+    <div class="logo-sub">Mobile Grooming Route Planner</div>
+  </div>
+
+  <div class="sidebar-content">
+    <div class="section">
+      <div class="section-header">
+        📍 Address Lookup
+      </div>
+      <div class="search-box">
+        <input 
+          type="text" 
+          id="addressInput" 
+          class="search-input" 
+          placeholder="Enter address (e.g., 123 Main St, Parker)"
+        />
+        <span class="search-icon">🔍</span>
+      </div>
+      <button class="btn" onclick="lookupAddress()">Find Region & Distance</button>
+      <div id="result"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        🗺️ Service Regions
+      </div>
+      <div class="region-grid">
+        <div class="region-card north">
+          <div class="region-name">North</div>
+          <div class="region-count">69 areas</div>
+        </div>
+        <div class="region-card east">
+          <div class="region-name">East</div>
+          <div class="region-count">70 areas</div>
+        </div>
+        <div class="region-card south">
+          <div class="region-name">South</div>
+          <div class="region-count">28 areas</div>
+        </div>
+        <div class="region-card castle-rock">
+          <div class="region-name">Castle Rock</div>
+          <div class="region-count">93 areas</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="map"></div>
+
+<script>
+// ============== CONFIGURATION ==============
+const HQ = [39.3722, -104.8561]; // 201 S Wilcox St, Castle Rock
+const GOOGLE_API_KEY = 'AIzaSyAG45yOeB8WJx6ZgDbAAOBSgo7WMmXLapk';
+
+// Distance rings (in miles)
+const RINGS = [1, 3, 5, 10, 15, 20];
+
+// Region colors
+const COLORS = {
+  'north': '#C62828',
+  'east': '#2E7D32', 
+  'south': '#1565C0',
+  'castle-rock': '#D46A00'
+};
+
+// ============== NEIGHBORHOODS DATA ==============
+const NEIGHBORHOODS = [
+  // ==================== CASTLE ROCK (93) ====================
+  {name:"Castle North",lat:39.3980,lng:-104.8825,region:"castle-rock"},
+  {name:"Terrain",lat:39.3935782,lng:-104.8191965,region:"castle-rock"},
+  {name:"Mesa",lat:39.395,lng:-104.845,region:"castle-rock"},
+  {name:"Metzler Ranch",lat:39.398,lng:-104.8325,region:"castle-rock"},
+  {name:"Emerson Ranch",lat:39.395,lng:-104.8175,region:"castle-rock"},
+  {name:"Diamond Ridge",lat:39.393,lng:-104.83,region:"castle-rock"},
+  {name:"Allen's Peak",lat:39.388,lng:-104.83,region:"castle-rock"},
+  {name:"Crystal Valley Ranch",lat:39.382,lng:-104.825,region:"castle-rock"},
+  {name:"Founders Village",lat:39.3787,lng:-104.8245,region:"castle-rock"},
+  {name:"Lagae Estates",lat:39.375,lng:-104.815,region:"castle-rock"},
+  {name:"Crystal Oaks",lat:39.385,lng:-104.82,region:"castle-rock"},
+  {name:"Castle Pines Vlg S",lat:39.365,lng:-104.89,region:"castle-rock"},
+  {name:"Ridgeline",lat:39.368,lng:-104.875,region:"castle-rock"},
+  {name:"Castle Vista",lat:39.363,lng:-104.865,region:"castle-rock"},
+  {name:"Caprice",lat:39.360,lng:-104.855,region:"castle-rock"},
+  {name:"Gateway Mesa",lat:39.358,lng:-104.87,region:"castle-rock"},
+  {name:"Cobblestone Ranch",lat:39.371,lng:-104.86,region:"castle-rock"},
+  {name:"Crystal Valley",lat:39.375,lng:-104.825,region:"castle-rock"},
+  {name:"Stonecrest",lat:39.365,lng:-104.84,region:"castle-rock"},
+  {name:"Montaine",lat:39.362,lng:-104.83,region:"castle-rock"},
+  {name:"Southdown Village",lat:39.355,lng:-104.845,region:"castle-rock"},
+  {name:"Pradera West",lat:39.350,lng:-104.850,region:"castle-rock"},
+  {name:"Red Hawk Ridge",lat:39.348,lng:-104.835,region:"castle-rock"},
+  {name:"Villages East",lat:39.345,lng:-104.865,region:"castle-rock"},
+  {name:"Sapphire Pointe",lat:39.342,lng:-104.855,region:"castle-rock"},
+  {name:"Miller's Landing",lat:39.340,lng:-104.845,region:"castle-rock"},
+  {name:"Terrain West",lat:39.395,lng:-104.865,region:"castle-rock"},
+  {name:"Serengeti",lat:39.392,lng:-104.875,region:"castle-rock"},
+  {name:"Happy Canyon",lat:39.385,lng:-104.88,region:"castle-rock"},
+  {name:"Festival",lat:39.38,lng:-104.87,region:"castle-rock"},
+  {name:"Castle Oaks",lat:39.375,lng:-104.865,region:"castle-rock"},
+  {name:"Sommerset",lat:39.368,lng:-104.855,region:"castle-rock"},
+  {name:"The Retreat",lat:39.365,lng:-104.88,region:"castle-rock"},
+  {name:"Plum Creek — Main",lat:39.3505,lng:-104.8602,region:"castle-rock"},
+  {name:"Plum Creek — Brookside",lat:39.3520,lng:-104.8550,region:"castle-rock"},
+  {name:"Plum Creek — Traditions",lat:39.3480,lng:-104.8620,region:"castle-rock"},
+  {name:"Plum Creek — Ridge",lat:39.3510,lng:-104.8480,region:"castle-rock"},
+  {name:"Plum Creek — Peninsula",lat:39.3540,lng:-104.8520,region:"castle-rock"},
+  {name:"Plum Creek — Fairways",lat:39.3570,lng:-104.8500,region:"castle-rock"},
+  {name:"Plum Creek — Augusta Pt",lat:39.3590,lng:-104.8540,region:"castle-rock"},
+  {name:"Plum Creek — Ryder Cup",lat:39.3550,lng:-104.8570,region:"castle-rock"},
+  {name:"Plum Creek — Players Xing",lat:39.3600,lng:-104.8510,region:"castle-rock"},
+  {name:"Meadows — Alpine Ridge",lat:39.384,lng:-104.908,region:"castle-rock"},
+  {name:"Meadows — High Prairie",lat:39.386,lng:-104.902,region:"castle-rock"},
+  {name:"Meadows — Tyler Park",lat:39.396,lng:-104.896,region:"castle-rock"},
+  {name:"Meadows — New Haven",lat:39.394,lng:-104.893,region:"castle-rock"},
+  {name:"Meadows — Leafdale",lat:39.398,lng:-104.902,region:"castle-rock"},
+  {name:"Meadows — Gamble Oak",lat:39.397,lng:-104.906,region:"castle-rock"},
+  {name:"Meadows — Mountain View",lat:39.388,lng:-104.91,region:"castle-rock"},
+  {name:"Meadows — Meadow Gate",lat:39.39,lng:-104.905,region:"castle-rock"},
+  {name:"Meadows — Aspen Trail",lat:39.387,lng:-104.913,region:"castle-rock"},
+  {name:"Meadows — Coyote Run",lat:39.392,lng:-104.912,region:"castle-rock"},
+  {name:"Meadows — Vista Heights",lat:39.395,lng:-104.909,region:"castle-rock"},
+  {name:"Meadows — Deer Track",lat:39.383,lng:-104.897,region:"castle-rock"},
+  {name:"Meadows — Soaring Eagle",lat:39.385,lng:-104.892,region:"castle-rock"},
+  {name:"Meadows — Patina",lat:39.399,lng:-104.896,region:"castle-rock"},
+  {name:"Meadows — Watercolor",lat:39.401,lng:-104.903,region:"castle-rock"},
+  {name:"Meadows — Weathervane",lat:39.4,lng:-104.91,region:"castle-rock"},
+  {name:"Meadows — Suncatcher",lat:39.403,lng:-104.906,region:"castle-rock"},
+  {name:"Meadows — Plainsong",lat:39.402,lng:-104.899,region:"castle-rock"},
+  {name:"Meadows — Morgans Run",lat:39.398,lng:-104.91,region:"castle-rock"},
+  {name:"Meadows — Sweetwood",lat:39.4,lng:-104.89,region:"castle-rock"},
+  {name:"Meadows — Briscoe Ranch",lat:39.405,lng:-104.895,region:"castle-rock"},
+  {name:"Meadows — Morningview",lat:39.403,lng:-104.892,region:"castle-rock"},
+  {name:"Meadows — Feathergrass",lat:39.406,lng:-104.902,region:"castle-rock"},
+  {name:"Meadows — Harris Grove",lat:39.404,lng:-104.909,region:"castle-rock"},
+  {name:"Meadows — Fuller Bluff",lat:39.408,lng:-104.899,region:"castle-rock"},
+  {name:"Meadows — Upland Park",lat:39.409,lng:-104.906,region:"castle-rock"},
+  {name:"Meadows — Starling Hill",lat:39.407,lng:-104.91,region:"castle-rock"},
+  {name:"Meadows — Stewart Park",lat:39.405,lng:-104.905,region:"castle-rock"},
+  {name:"Meadows — Panorama",lat:39.41,lng:-104.903,region:"castle-rock"},
+  {name:"Meadows — Blacktail",lat:39.411,lng:-104.897,region:"castle-rock"},
+  {name:"Meadows — Azure",lat:39.393,lng:-104.9,region:"castle-rock"},
+  {name:"Meadows — Cyan Circle",lat:39.412,lng:-104.906,region:"castle-rock"},
+  {name:"Castle Rock Downtown",lat:39.3722,lng:-104.8561,region:"castle-rock"},
+  {name:"Rock Ridge",lat:39.368,lng:-104.848,region:"castle-rock"},
+  {name:"Crowfoot Valley",lat:39.361,lng:-104.842,region:"castle-rock"},
+  {name:"Willow Springs",lat:39.355,lng:-104.838,region:"castle-rock"},
+  {name:"Oakwood",lat:39.378,lng:-104.852,region:"castle-rock"},
+  {name:"Broadmoor",lat:39.382,lng:-104.858,region:"castle-rock"},
+  {name:"Elk Ridge",lat:39.387,lng:-104.863,region:"castle-rock"},
+  {name:"Riverwalk",lat:39.374,lng:-104.844,region:"castle-rock"},
+  {name:"Castle Pines South",lat:39.366,lng:-104.856,region:"castle-rock"},
+  {name:"Red Hawk Village",lat:39.352,lng:-104.848,region:"castle-rock"},
+  {name:"Bellaire",lat:39.358,lng:-104.862,region:"castle-rock"},
+  {name:"Crystal Park",lat:39.363,lng:-104.869,region:"castle-rock"},
+  {name:"Castlewood Ranch",lat:39.369,lng:-104.874,region:"castle-rock"},
+  {name:"The Reserve",lat:39.375,lng:-104.881,region:"castle-rock"},
+  {name:"Village Square",lat:39.371,lng:-104.855,region:"castle-rock"},
+  {name:"Wolfensberger",lat:39.364,lng:-104.851,region:"castle-rock"},
+
+  // ==================== NORTH — HR, Castle Pines, Lone Tree (69) ====================
+  {name:"HR — Northridge",lat:39.5505,lng:-104.9690,region:"north"},
+  {name:"HR — Falcon Hills",lat:39.5480,lng:-104.9580,region:"north"},
+  {name:"HR — Richmond Pointe",lat:39.5430,lng:-104.9600,region:"north"},
+  {name:"HR — Timberline Ridge",lat:39.5460,lng:-104.9450,region:"north"},
+  {name:"HR — Sand Creek",lat:39.5490,lng:-104.9550,region:"north"},
+  {name:"HR — Writer Ridge",lat:39.5520,lng:-104.9620,region:"north"},
+  {name:"HR — Heather Hills",lat:39.5540,lng:-104.9500,region:"north"},
+  {name:"HR — Canyon Ranch",lat:39.5560,lng:-104.9650,region:"north"},
+  {name:"HR — Westridge",lat:39.5390,lng:-104.9820,region:"north"},
+  {name:"HR — Westridge Pointe",lat:39.5350,lng:-104.9850,region:"north"},
+  {name:"HR — Highland Hills",lat:39.5320,lng:-104.9780,region:"north"},
+  {name:"HR — The Villages",lat:39.5370,lng:-104.9900,region:"north"},
+  {name:"HR — Mansion Pointe",lat:39.5340,lng:-104.9880,region:"north"},
+  {name:"HR — Golf Club",lat:39.5300,lng:-104.9800,region:"north"},
+  {name:"HR — Westridge Glen",lat:39.5360,lng:-104.9760,region:"north"},
+  {name:"HR — Westridge Meadows",lat:39.5380,lng:-104.9730,region:"north"},
+  {name:"HR — Westridge Knolls",lat:39.5330,lng:-104.9840,region:"north"},
+  {name:"HR — Mansion Hills",lat:39.5310,lng:-104.9860,region:"north"},
+  {name:"HR — Eastridge",lat:39.5480,lng:-104.9410,region:"north"},
+  {name:"HR — Palomino Park",lat:39.5510,lng:-104.9350,region:"north"},
+  {name:"HR — The Links",lat:39.5450,lng:-104.9320,region:"north"},
+  {name:"HR — Hawks Point",lat:39.5470,lng:-104.9280,region:"north"},
+  {name:"HR — Eastridge Terrace",lat:39.5440,lng:-104.9380,region:"north"},
+  {name:"HR — Southridge",lat:39.5230,lng:-104.9670,region:"north"},
+  {name:"HR — Dad Clark",lat:39.5350,lng:-104.9520,region:"north"},
+  {name:"HR — Indigo Hill",lat:39.5260,lng:-104.9700,region:"north"},
+  {name:"HR — Kentley Hills",lat:39.5280,lng:-104.9640,region:"north"},
+  {name:"HR — The Hearth",lat:39.5310,lng:-104.9580,region:"north"},
+  {name:"HR — Verona",lat:39.5250,lng:-104.9540,region:"north"},
+  {name:"HR — Rock Canyon",lat:39.5200,lng:-104.9620,region:"north"},
+  {name:"HR — Sundance",lat:39.5240,lng:-104.9590,region:"north"},
+  {name:"HR — Stonebury",lat:39.5270,lng:-104.9730,region:"north"},
+  {name:"HR — Southridge Vista",lat:39.5220,lng:-104.9560,region:"north"},
+  {name:"HR — Town Center",lat:39.5520,lng:-104.9530,region:"north"},
+  {name:"HR — Mountain Vista",lat:39.5420,lng:-104.9390,region:"north"},
+  {name:"HR — Firelight",lat:39.5290,lng:-104.9710,region:"north"},
+  {name:"HR — Ranch Reserve",lat:39.5160,lng:-104.9460,region:"north"},
+  {name:"HR — Backcountry",lat:39.5190,lng:-104.9180,region:"north"},
+  {name:"HR — Highlands Pt",lat:39.5440,lng:-104.9750,region:"north"},
+  {name:"HR — Highwoods",lat:39.5210,lng:-104.9500,region:"north"},
+  {name:"HR — Birkdale",lat:39.5400,lng:-104.9680,region:"north"},
+  {name:"HR — Huntington Est.",lat:39.5500,lng:-104.9480,region:"north"},
+  {name:"HR — Clocktower",lat:39.5530,lng:-104.9560,region:"north"},
+  {name:"HR — Carlyle Park",lat:39.5470,lng:-104.9640,region:"north"},
+  {name:"HR — Weatherstone",lat:39.5420,lng:-104.9560,region:"north"},
+  {name:"Lone Tree",lat:39.5186,lng:-104.8963,region:"north"},
+  {name:"Lone Tree — RidgeGate",lat:39.5090,lng:-104.8890,region:"north"},
+  {name:"Lone Tree — Heritage",lat:39.5250,lng:-104.8760,region:"north"},
+  {name:"Park Meadows",lat:39.5610,lng:-104.8810,region:"north"},
+  {name:"Castle Pines",lat:39.4620,lng:-104.8960,region:"north"},
+  {name:"Castle Pines Village",lat:39.4700,lng:-104.9100,region:"north"},
+  {name:"Castle Pines North",lat:39.4750,lng:-104.8850,region:"north"},
+  {name:"Surrey Ridge",lat:39.4730,lng:-104.8670,region:"north"},
+  {name:"The Canyons",lat:39.4560,lng:-104.8530,region:"north"},
+  {name:"Wildcat Ridge",lat:39.4590,lng:-104.9120,region:"north"},
+  {name:"Lagae Ranch",lat:39.4650,lng:-104.8810,region:"north"},
+  {name:"Sedalia",lat:39.4380,lng:-104.9570,region:"north"},
+  {name:"Daniels Park",lat:39.4670,lng:-104.9230,region:"north"},
+  {name:"Roxborough",lat:39.4700,lng:-105.0710,region:"north"},
+  {name:"Roxborough Village",lat:39.4890,lng:-105.0640,region:"north"},
+  {name:"Roxborough Park",lat:39.4750,lng:-105.0750,region:"north"},
+  {name:"Sterling Ranch",lat:39.4810,lng:-105.0380,region:"north"},
+  {name:"Waterton",lat:39.4840,lng:-105.0530,region:"north"},
+  {name:"Chatfield Area",lat:39.5340,lng:-105.0690,region:"north"},
+  {name:"Acres Green",lat:39.5410,lng:-104.8970,region:"north"},
+  {name:"Inverness",lat:39.5670,lng:-104.8570,region:"north"},
+  {name:"Lincoln Station",lat:39.5490,lng:-104.8690,region:"north"},
+  {name:"Stonegate",lat:39.5410,lng:-104.8430,region:"north"},
+  {name:"Meridian",lat:39.5220,lng:-104.8530,region:"north"},
+
+  // ==================== EAST — Parker, Pinery, Rural (70) ====================
+  {name:"Parker — Downtown",lat:39.5123,lng:-104.7614,region:"east"},
+  {name:"Parker — Clarke Farms",lat:39.5100,lng:-104.7730,region:"east"},
+  {name:"Parker — Stonegate N",lat:39.5320,lng:-104.7480,region:"east"},
+  {name:"Parker — Stonegate S",lat:39.5250,lng:-104.7450,region:"east"},
+  {name:"Parker — Timbers",lat:39.5200,lng:-104.7830,region:"east"},
+  {name:"Parker — Lincoln Creek",lat:39.5050,lng:-104.7590,region:"east"},
+  {name:"Parker — Stroh Ranch",lat:39.5010,lng:-104.7380,region:"east"},
+  {name:"Parker — Pine Lane",lat:39.5190,lng:-104.7190,region:"east"},
+  {name:"Parker — Canterberry",lat:39.5140,lng:-104.7990,region:"east"},
+  {name:"Parker — Idyllwilde",lat:39.5300,lng:-104.7340,region:"east"},
+  {name:"Parker — Motsenbocker",lat:39.5060,lng:-104.7690,region:"east"},
+  {name:"Parker — Ponderosa",lat:39.4970,lng:-104.7560,region:"east"},
+  {name:"Parker — Bar CK Ranch",lat:39.4930,lng:-104.7390,region:"east"},
+  {name:"Parker — Sierra Ridge",lat:39.4880,lng:-104.7520,region:"east"},
+  {name:"Parker — Challenger Est.",lat:39.5280,lng:-104.7100,region:"east"},
+  {name:"Parker — Heirloom",lat:39.5070,lng:-104.7800,region:"east"},
+  {name:"Parker — Bradbury Ranch",lat:39.5160,lng:-104.7650,region:"east"},
+  {name:"Parker — Rowley Downs",lat:39.5080,lng:-104.7540,region:"east"},
+  {name:"Parker — Cottonwood",lat:39.5340,lng:-104.7600,region:"east"},
+  {name:"Parker — Dove Ridge",lat:39.5370,lng:-104.7550,region:"east"},
+  {name:"Parker — Auburn Hills",lat:39.5130,lng:-104.7500,region:"east"},
+  {name:"Parker — Newlin Meadows",lat:39.5020,lng:-104.7470,region:"east"},
+  {name:"Parker — Hidden River",lat:39.5050,lng:-104.7850,region:"east"},
+  {name:"Parker — Saddlebrook",lat:39.4990,lng:-104.7650,region:"east"},
+  {name:"Parker — Willow Park",lat:39.5120,lng:-104.7420,region:"east"},
+  {name:"Parker — Bell Cross",lat:39.5180,lng:-104.7300,region:"east"},
+  {name:"Parker — Sunset Ridge",lat:39.5060,lng:-104.7350,region:"east"},
+  {name:"Parker — Parker Vista",lat:39.5150,lng:-104.7550,region:"east"},
+  {name:"Parker — Antelope Hts",lat:39.5040,lng:-104.7300,region:"east"},
+  {name:"Parker — Horse Creek",lat:39.5090,lng:-104.7260,region:"east"},
+  {name:"Parker — Horseshoe Rdg",lat:39.5110,lng:-104.7220,region:"east"},
+  {name:"Parker — Pine Bluffs",lat:39.5030,lng:-104.7410,region:"east"},
+  {name:"Parker — Anthology",lat:39.4990,lng:-104.7520,region:"east"},
+  {name:"Parker — Stepping Stone",lat:39.5210,lng:-104.7590,region:"east"},
+  {name:"Parker — Villages of Pkr",lat:39.5100,lng:-104.8020,region:"east"},
+  {name:"Parker — Dove Village",lat:39.5380,lng:-104.7490,region:"east"},
+  {name:"Parker — Jordan Crossing",lat:39.5350,lng:-104.7680,region:"east"},
+  {name:"Parker — Meridian Vlg",lat:39.5290,lng:-104.7640,region:"east"},
+  {name:"Parker — Spirit Ridge",lat:39.5200,lng:-104.7460,region:"east"},
+  {name:"Parker — Stonecreek Rch",lat:39.4940,lng:-104.7450,region:"east"},
+  {name:"Parker — Reata Ridge",lat:39.4950,lng:-104.7290,region:"east"},
+  {name:"Parker — Preston Hills",lat:39.5170,lng:-104.7700,region:"east"},
+  {name:"Parker — Salisbury Hts",lat:39.5100,lng:-104.7150,region:"east"},
+  {name:"Parker — Meadowlark",lat:39.5350,lng:-104.7430,region:"east"},
+  {name:"Parker — Quail Creek",lat:39.5230,lng:-104.7360,region:"east"},
+  {name:"Parker — Butterfield",lat:39.4960,lng:-104.7370,region:"east"},
+  {name:"Parker — Tenderfoot",lat:39.5070,lng:-104.7430,region:"east"},
+  {name:"Parker — Travois",lat:39.5030,lng:-104.7580,region:"east"},
+  {name:"Pinery",lat:39.4530,lng:-104.7370,region:"east"},
+  {name:"Pinery — West",lat:39.4570,lng:-104.7560,region:"east"},
+  {name:"Pinery — East",lat:39.4490,lng:-104.7190,region:"east"},
+  {name:"Pinery — Timbers",lat:39.4550,lng:-104.7450,region:"east"},
+  {name:"Pinery — Glen",lat:39.4510,lng:-104.7510,region:"east"},
+  {name:"Bayou Gulch",lat:39.4680,lng:-104.7680,region:"east"},
+  {name:"Lincoln Park",lat:39.4720,lng:-104.7490,region:"east"},
+  {name:"Paintbrush",lat:39.4850,lng:-104.7310,region:"east"},
+  {name:"Prairie Hawk",lat:39.4400,lng:-104.7280,region:"east"},
+  {name:"Pradera",lat:39.4240,lng:-104.7570,region:"east"},
+  {name:"Hidden River Estates",lat:39.4430,lng:-104.7650,region:"east"},
+  {name:"Colorado Golf Club",lat:39.4350,lng:-104.7490,region:"east"},
+  {name:"High Prairie Farms",lat:39.4470,lng:-104.7580,region:"east"},
+  {name:"Franktown",lat:39.3880,lng:-104.7450,region:"east"},
+  {name:"Russellville Estates",lat:39.3750,lng:-104.7300,region:"east"},
+  {name:"Cherry Valley",lat:39.4100,lng:-104.7380,region:"east"},
+  {name:"Castlewood Canyon",lat:39.3330,lng:-104.7450,region:"east"},
+  {name:"Elizabeth",lat:39.3611,lng:-104.5974,region:"east"},
+  {name:"Running Creek",lat:39.3550,lng:-104.6200,region:"east"},
+  {name:"Spring Valley Ranch",lat:39.3450,lng:-104.6100,region:"east"},
+  {name:"Kiowa",lat:39.3450,lng:-104.4630,region:"east"},
+  {name:"Elbert",lat:39.2260,lng:-104.5480,region:"east"},
+
+  // ==================== SOUTH (28) ====================
+  {name:"Larkspur",lat:39.2220,lng:-104.8820,region:"south"},
+  {name:"Larkspur Butte",lat:39.2190,lng:-104.8960,region:"south"},
+  {name:"Perry Park",lat:39.2580,lng:-104.9120,region:"south"},
+  {name:"Bear Creek Village",lat:39.2400,lng:-104.8950,region:"south"},
+  {name:"Bear Creek Estates",lat:39.2460,lng:-104.8840,region:"south"},
+  {name:"Spruce Mtn Estates",lat:39.2750,lng:-104.8930,region:"south"},
+  {name:"Spruce Mountain",lat:39.2800,lng:-104.9000,region:"south"},
+  {name:"Spring Valley",lat:39.2150,lng:-104.8700,region:"south"},
+  {name:"Greenland",lat:39.2350,lng:-104.8620,region:"south"},
+  {name:"Greenland Ranch",lat:39.2500,lng:-104.8540,region:"south"},
+  {name:"Tomah Road Area",lat:39.3030,lng:-104.8910,region:"south"},
+  {name:"Castle Pines South",lat:39.3130,lng:-104.8780,region:"south"},
+  {name:"Rainbow Falls",lat:39.3100,lng:-104.8500,region:"south"},
+  {name:"Sage Port",lat:39.2900,lng:-104.8650,region:"south"},
+  {name:"Dawson Ridge",lat:39.2700,lng:-104.8560,region:"south"},
+  {name:"Red Rock Ranch",lat:39.2600,lng:-104.8700,region:"south"},
+  {name:"Pine Bluffs",lat:39.2300,lng:-104.8500,region:"south"},
+  {name:"Palmer Lake",lat:39.1220,lng:-104.9170,region:"south"},
+  {name:"Monument",lat:39.0917,lng:-104.8727,region:"south"},
+  {name:"Monument — Tri-Lakes",lat:39.1080,lng:-104.8860,region:"south"},
+  {name:"Monument — Jackson Crk",lat:39.0750,lng:-104.8420,region:"south"},
+  {name:"Monument — Promontory",lat:39.0810,lng:-104.8580,region:"south"},
+  {name:"Monument — Fox Run",lat:39.0850,lng:-104.8320,region:"south"},
+  {name:"Woodmoor",lat:39.1050,lng:-104.8540,region:"south"},
+  {name:"Lake Woodmoor",lat:39.1100,lng:-104.8700,region:"south"},
+  {name:"Gleneagle",lat:39.0410,lng:-104.8230,region:"south"},
+  {name:"Forest Lakes",lat:39.1000,lng:-104.9050,region:"south"},
+  {name:"Red Mountain Ranch",lat:39.1150,lng:-104.8950,region:"south"}
+];
+
+// ============== MAP INITIALIZATION ==============
+let map;
+let hqMarker;
+let searchMarker;
+let neighborhoodMarkers = [];
+
+function initMap() {
+  // Create map centered on HQ
+  map = L.map('map').setView(HQ, 11);
+  
+  // Add tile layer
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors'
+  }).addTo(map);
+  
+  // Add HQ marker
+  hqMarker = L.marker(HQ, {
+    icon: L.divIcon({
+      className: 'hq-marker',
+      html: '<div style="background:#d4830a;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:18px;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3)">🏢</div>',
+      iconSize: [32, 32]
+    })
+  }).addTo(map).bindPopup('<strong>Woofies HQ</strong><br>201 S Wilcox St');
+  
+  // Draw distance rings
+  RINGS.forEach((radius, i) => {
+    const radiusMeters = radius * 1609.34;
+    const colors = ['#C62828', '#D46A00', '#2E7D32', '#1565C0', '#9C27B0', '#424242'];
+    L.circle(HQ, {
+      radius: radiusMeters,
+      color: colors[i % colors.length],
+      fillColor: colors[i % colors.length],
+      fillOpacity: 0.05,
+      weight: 2,
+      dashArray: '5, 5'
+    }).addTo(map);
+  });
+  
+  // Add neighborhood markers
+  NEIGHBORHOODS.forEach(n => {
+    const color = COLORS[n.region];
+    const marker = L.circleMarker([n.lat, n.lng], {
+      radius: 5,
+      fillColor: color,
+      color: 'white',
+      weight: 1,
+      fillOpacity: 0.7
+    }).addTo(map).bindPopup(`<strong>${n.name}</strong><br>${n.region}`);
+    neighborhoodMarkers.push(marker);
+  });
+}
+
+// ============== GEOCODING FUNCTIONS ==============
+async function geocodeAddress(address) {
+  try {
+    const response = await fetch(
+      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${GOOGLE_API_KEY}`
+    );
+    const data = await response.json();
+    
+    if (data.status === 'OK' && data.results.length > 0) {
+      const result = data.results[0];
+      return {
+        lat: result.geometry.location.lat,
+        lng: result.geometry.location.lng,
+        formatted: result.formatted_address
+      };
+    } else if (data.status === 'ZERO_RESULTS') {
+      throw new Error('Address not found');
+    } else if (data.status === 'REQUEST_DENIED') {
+      throw new Error('Geocoding API error: ' + (data.error_message || 'REQUEST_DENIED'));
+    } else {
+      throw new Error('Geocoding failed: ' + data.status);
+    }
+  } catch (error) {
+    console.error('Geocoding error:', error);
+    throw error;
+  }
+}
+
+function calculateDistance(lat1, lng1, lat2, lng2) {
+  const R = 3959;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLng/2) * Math.sin(dLng/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
+
+function getRegion(distance) {
+  if (distance <= 2) return { tier: 'Core', color: '#C62828' };
+  if (distance <= 5) return { tier: 'Near', color: '#D46A00' };
+  if (distance <= 10) return { tier: 'Mid', color: '#2E7D32' };
+  return { tier: 'Far', color: '#1565C0' };
+}
+
+// ============== ADDRESS LOOKUP ==============
+async function lookupAddress() {
+  const input = document.getElementById('addressInput');
+  const address = input.value.trim();
+  const resultDiv = document.getElementById('result');
+  
+  if (!address) {
+    resultDiv.innerHTML = '<div class="result-box error">Please enter an address</div>';
+    return;
+  }
+  
+  resultDiv.innerHTML = '<div class="result-box">🔍 Searching...</div>';
+  
+  try {
+    const location = await geocodeAddress(address);
+    const distance = calculateDistance(HQ[0], HQ[1], location.lat, location.lng);
+    const region = getRegion(distance);
+    
+    if (searchMarker) {
+      map.removeLayer(searchMarker);
+    }
+    searchMarker = L.marker([location.lat, location.lng], {
+      icon: L.divIcon({
+        className: 'search-marker',
+        html: '<div style="background:#e94560;width:24px;height:24px;border-radius:50%;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3)"></div>',
+        iconSize: [24, 24]
+      })
+    }).addTo(map).bindPopup(`<strong>Search Result</strong><br>${location.formatted}`);
+    
+    map.setView([location.lat, location.lng], 13);
+    
+    resultDiv.innerHTML = `
+      <div class="result-box success">
+        <strong>📍 ${location.formatted}</strong><br><br>
+        <strong>Distance from HQ:</strong> ${distance.toFixed(1)} miles<br>
+        <strong>Service Tier:</strong> <span style="color:${region.color}">${region.tier}</span><br>
+        <strong>Drive Time:</strong> ~${Math.ceil(distance * 2)} minutes
+      </div>
+    `;
+  } catch (error) {
+    resultDiv.innerHTML = `
+      <div class="result-box error">
+        <strong>❌ Address Not Found</strong><br>
+        ${error.message}<br><br>
+        Try: "123 Main St, Parker" or "Founders Village"
+      </div>
+    `;
+  }
+}
+
+// ============== AUTOCOMPLETE ==============
+let autocomplete;
+
+function initAutocomplete() {
+  const input = document.getElementById('addressInput');
+  
+  if (!window.google || !window.google.maps || !window.google.maps.places) {
+    console.log('Google Places not ready, retrying...');
+    setTimeout(initAutocomplete, 500);
+    return;
+  }
+  
+  autocomplete = new google.maps.places.Autocomplete(input, {
+    componentRestrictions: { country: 'us' },
+    bounds: {
+      south: 39.0,
+      west: -105.3,
+      north: 39.8,
+      east: -104.3
+    },
+    types: ['address']
+  });
+  
+  autocomplete.addListener('place_changed', () => {
+    const place = autocomplete.getPlace();
+    if (place.geometry) {
+      setTimeout(lookupAddress, 100);
+    }
+  });
+}
+
+// ============== INITIALIZATION ==============
+window.addEventListener('load', () => {
+  initMap();
+  setTimeout(initAutocomplete, 1000);
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  const input = document.getElementById('addressInput');
+  if (input) {
+    input.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        lookupAddress();
+      }
+    });
+  }
+});
+</script>
+</body>
+</html>
