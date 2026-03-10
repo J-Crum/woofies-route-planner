@@ -3,599 +3,417 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Woofies Route Planner — Castle Rock, CO</title>
+<title>Woofies Route Planner - Castle Rock, CO</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAG45yOeB8WJx6ZgDbAAOBSgo7WMmXLapk&libraries=places"></script>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="customers.js"></script>
 <style>
-  :root {
-    --north: #C62828;
-    --north-light: #FCEAE9;
-    --north-mid: #E53935;
-    --east: #2E7D32;
-    --east-light: #E6F4EA;
-    --east-mid: #43A047;
-    --south: #1565C0;
-    --south-light: #E8F0FE;
-    --south-mid: #1E88E5;
-    --castle-rock: #D46A00;
-    --castle-rock-light: #FEF7E0;
-    --castle-rock-mid: #FFA000;
-    --bg: #f4f5f7;
-    --panel: #ffffff;
-    --panel-border: #e0e3e8;
-    --text: #1a1a2e;
-    --text-dim: #6b7280;
-    --accent: #e94560;
-    --paw: #d4830a;
-  }
+* { margin: 0; padding: 0; box-sizing: border-box; }
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+}
 
-  body {
-    font-family: 'DM Sans', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    height: 100vh;
-    overflow: hidden;
-    display: flex;
-  }
+/* Sidebar */
+.sidebar {
+  width: 400px;
+  background: white;
+  border-right: 1px solid #ddd;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow-y: auto;
+}
 
-  .sidebar {
-    width: 380px;
-    min-width: 380px;
-    background: var(--panel);
-    border-right: 1px solid var(--panel-border);
-    box-shadow: 2px 0 12px rgba(0,0,0,0.06);
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    z-index: 1000;
-  }
+.header {
+  padding: 20px;
+  background: linear-gradient(135deg, #D46A00, #FFA000);
+  color: white;
+}
 
-  .sidebar-header {
-    padding: 20px 24px 16px;
-    border-bottom: 1px solid var(--panel-border);
-    background: linear-gradient(135deg, #f8f9fb 0%, #ffffff 100%);
-  }
+.header h1 {
+  font-size: 24px;
+  margin-bottom: 5px;
+}
 
-  .logo-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 4px;
-  }
+.header p {
+  font-size: 12px;
+  opacity: 0.9;
+}
 
-  .logo-icon {
-    width: 44px;
-    height: 44px;
-    background: var(--paw);
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 24px;
-    box-shadow: 0 4px 12px rgba(212, 131, 10, 0.25);
-  }
+.section {
+  padding: 20px;
+  border-bottom: 1px solid #eee;
+}
 
-  .logo-text {
-    font-family: 'Fredoka', sans-serif;
-    font-size: 26px;
-    font-weight: 700;
-    color: var(--paw);
-    letter-spacing: -0.5px;
-  }
+.section-title {
+  font-weight: 600;
+  margin-bottom: 12px;
+  font-size: 14px;
+  color: #333;
+}
 
-  .logo-sub {
-    font-size: 12px;
-    color: var(--text-dim);
-    margin-left: 56px;
-    margin-top: -2px;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-  }
+/* Inputs */
+input[type="text"] {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
 
-  .sidebar-content {
-    flex: 1;
-    overflow-y: auto;
-    padding: 20px;
-  }
+input[type="text"]:focus {
+  outline: none;
+  border-color: #D46A00;
+}
 
-  .section {
-    margin-bottom: 24px;
-  }
+/* Buttons */
+.btn {
+  width: 100%;
+  padding: 12px;
+  background: #D46A00;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 8px;
+}
 
-  .section-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 12px;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.8px;
-    text-transform: uppercase;
-    color: var(--text-dim);
-  }
+.btn:hover {
+  background: #c17509;
+}
 
-  .search-box {
-    position: relative;
-    margin-bottom: 12px;
-  }
+.btn-small {
+  padding: 8px 16px;
+  font-size: 13px;
+  width: auto;
+  display: inline-block;
+}
 
-  .search-input {
-    width: 100%;
-    padding: 12px 40px 12px 16px;
-    border: 2px solid var(--panel-border);
-    border-radius: 12px;
-    font-size: 15px;
-    font-family: 'DM Sans', sans-serif;
-    transition: all 0.2s;
-    background: white;
-  }
+.btn-group {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
 
-  .search-input:focus {
-    outline: none;
-    border-color: var(--paw);
-    box-shadow: 0 0 0 3px rgba(212, 131, 10, 0.1);
-  }
+.btn-group button {
+  flex: 1;
+  padding: 8px;
+  font-size: 12px;
+}
 
-  .search-icon {
-    position: absolute;
-    right: 14px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--text-dim);
-  }
+/* Results */
+.result-box {
+  padding: 15px;
+  background: #f9f9f9;
+  border-radius: 8px;
+  margin-top: 10px;
+  font-size: 13px;
+  line-height: 1.6;
+}
 
-  .btn {
-    width: 100%;
-    padding: 14px;
-    border: none;
-    border-radius: 12px;
-    font-size: 15px;
-    font-weight: 600;
-    font-family: 'DM Sans', sans-serif;
-    cursor: pointer;
-    transition: all 0.2s;
-    background: var(--paw);
-    color: white;
-  }
+.result-box.success {
+  background: #e6f4ea;
+  border-left: 4px solid #2E7D32;
+}
 
-  .btn:hover {
-    background: #c17509;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(212, 131, 10, 0.3);
-  }
+.result-box.error {
+  background: #fce8e6;
+  border-left: 4px solid #C62828;
+}
 
-  .result-box {
-    padding: 14px;
-    border-radius: 12px;
-    margin-top: 12px;
-    font-size: 14px;
-    line-height: 1.5;
-  }
+/* Lists */
+.list {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  background: #fafafa;
+}
 
-  .result-box.error {
-    background: #fee;
-    color: #c33;
-    border: 1px solid #fcc;
-  }
+.list-item {
+  padding: 12px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+  transition: background 0.2s;
+}
 
-  .result-box.success {
-    background: #efe;
-    color: #363;
-    border: 1px solid #cfc;
-  }
+.list-item:hover {
+  background: #f0f0f0;
+}
 
-  .region-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    margin-top: 12px;
-  }
+.list-item:last-child {
+  border-bottom: none;
+}
 
-  .region-card {
-    padding: 12px;
-    border-radius: 10px;
-    border: 2px solid;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
+/* Customer items */
+.customer-type {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: inline-block;
+  margin-right: 8px;
+}
 
-  .region-card.north {
-    border-color: var(--north);
-    background: var(--north-light);
-  }
+.mps {
+  background: #FFF3CD;
+  color: #856404;
+}
 
-  .region-card.east {
-    border-color: var(--east);
-    background: var(--east-light);
-  }
+.psdw {
+  background: #CCE5FF;
+  color: #004085;
+}
 
-  .region-card.south {
-    border-color: var(--south);
-    background: var(--south-light);
-  }
+/* Route stops */
+.route-stop {
+  padding: 10px;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  cursor: move;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
 
-  .region-card.castle-rock {
-    border-color: var(--castle-rock);
-    background: var(--castle-rock-light);
-  }
+.route-stop:hover {
+  background: #f9f9f9;
+}
 
-  .region-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  }
+.stop-remove {
+  color: #C62828;
+  cursor: pointer;
+  font-weight: bold;
+  padding: 0 8px;
+}
 
-  .region-name {
-    font-weight: 600;
-    font-size: 13px;
-    margin-bottom: 4px;
-  }
+.stop-remove:hover {
+  color: #8B0000;
+}
 
-  .region-card.north .region-name { color: var(--north); }
-  .region-card.east .region-name { color: var(--east); }
-  .region-card.south .region-name { color: var(--south); }
-  .region-card.castle-rock .region-name { color: var(--castle-rock); }
+/* Stats */
+.stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
 
-  .region-count {
-    font-size: 11px;
-    color: var(--text-dim);
-  }
+.stat-box {
+  background: #f5f5f5;
+  padding: 12px;
+  border-radius: 6px;
+  text-align: center;
+}
 
-  #map {
-    flex: 1;
-    height: 100vh;
-  }
+.stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #D46A00;
+}
 
-  .pac-container {
-    z-index: 10000 !important;
-    border-radius: 8px;
-    margin-top: 4px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    border: 1px solid var(--panel-border);
-  }
+.stat-label {
+  font-size: 11px;
+  color: #666;
+  text-transform: uppercase;
+}
 
-  /* Route Stops */
-  .route-stops {
-    max-height: 250px;
-    overflow-y: auto;
-    margin-top: 12px;
-  }
+/* Map */
+#map {
+  flex: 1;
+  height: 100vh;
+}
 
-  .route-stop {
-    padding: 12px;
-    background: white;
-    border: 1px solid var(--panel-border);
-    border-radius: 8px;
-    margin-bottom: 8px;
-    cursor: move;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    transition: all 0.2s;
-  }
+/* Info text */
+.info-text {
+  font-size: 12px;
+  color: #666;
+  text-align: center;
+  margin: 10px 0;
+}
 
-  .route-stop:hover {
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  }
-
-  .route-stop.dragging {
-    opacity: 0.5;
-  }
-
-  .stop-number {
-    width: 24px;
-    height: 24px;
-    background: var(--paw);
-    color: white;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    font-weight: 600;
-    flex-shrink: 0;
-  }
-
-  .stop-info {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .stop-name {
-    font-weight: 600;
-    font-size: 13px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .stop-distance {
-    font-size: 11px;
-    color: var(--text-dim);
-    margin-top: 2px;
-  }
-
-  .stop-remove {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    border: none;
-    background: #fee;
-    color: #c33;
-    cursor: pointer;
-    font-size: 14px;
-    flex-shrink: 0;
-  }
-
-  .stop-remove:hover {
-    background: #fcc;
-  }
-
-  .no-stops {
-    text-align: center;
-    padding: 24px;
-    color: var(--text-dim);
-    font-size: 13px;
-  }
-
-  /* Neighborhoods */
-  .neighborhoods-list {
-    max-height: 300px;
-    overflow-y: auto;
-    margin-top: 12px;
-  }
-
-  .neighborhood-item {
-    padding: 10px 12px;
-    border-bottom: 1px solid var(--panel-border);
-    cursor: pointer;
-    transition: background 0.2s;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .neighborhood-item:hover {
-    background: var(--bg);
-  }
-
-  .neighborhood-name {
-    font-size: 13px;
-    flex: 1;
-  }
-
-  .neighborhood-badge {
-    font-size: 10px;
-    padding: 3px 8px;
-    border-radius: 12px;
-    font-weight: 600;
-  }
-
-  .neighborhood-badge.north {
-    background: var(--north-light);
-    color: var(--north);
-  }
-
-  .neighborhood-badge.east {
-    background: var(--east-light);
-    color: var(--east);
-  }
-
-  .neighborhood-badge.south {
-    background: var(--south-light);
-    color: var(--south);
-  }
-
-  .neighborhood-badge.castle-rock {
-    background: var(--castle-rock-light);
-    color: var(--castle-rock);
-  }
-
-  .filter-input {
-    width: 100%;
-    padding: 10px 12px;
-    border: 1px solid var(--panel-border);
-    border-radius: 8px;
-    font-size: 13px;
-    font-family: 'DM Sans', sans-serif;
-    margin-top: 8px;
-  }
-
-  .filter-input:focus {
-    outline: none;
-    border-color: var(--paw);
-  }
-
-  .btn-small {
-    padding: 8px 12px;
-    font-size: 13px;
-    margin-top: 8px;
-  }
-
-  .stats-row {
-    display: flex;
-    gap: 8px;
-    margin-top: 12px;
-  }
-
-  .stat-box {
-    flex: 1;
-    padding: 10px;
-    background: var(--bg);
-    border-radius: 8px;
-    text-align: center;
-  }
-
-  .stat-value {
-    font-size: 20px;
-    font-weight: 700;
-    color: var(--paw);
-  }
-
-  .stat-label {
-    font-size: 10px;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-top: 2px;
-  }
+.empty-state {
+  text-align: center;
+  padding: 30px 20px;
+  color: #999;
+  font-size: 13px;
+}
 </style>
 </head>
 <body>
 
+<!-- Sidebar -->
 <div class="sidebar">
-  <div class="sidebar-header">
-    <div class="logo-row">
-      <div class="logo-icon">🐾</div>
-      <div class="logo-text">Woofies</div>
-    </div>
-    <div class="logo-sub">Mobile Grooming Route Planner</div>
+  <div class="header">
+    <h1>🐾 Woofies Route Planner</h1>
+    <p>Mobile Grooming - Castle Rock, CO</p>
+    <p style="font-size: 10px; margin-top: 8px; opacity: 0.8;">v3.0 - Complete Rebuild - March 10, 2026</p>
   </div>
 
-  <div class="sidebar-content">
-    <div class="section">
-      <div class="section-header">
-        📍 Address Lookup
-      </div>
-      <div class="search-box">
-        <input 
-          type="text" 
-          id="addressInput" 
-          class="search-input" 
-          placeholder="Enter address (e.g., 123 Main St, Parker)"
-        />
-        <span class="search-icon">🔍</span>
-      </div>
-      <button class="btn" onclick="lookupAddress()">Find Region & Distance</button>
-      <div id="result"></div>
-    </div>
+  <!-- Address Lookup -->
+  <div class="section">
+    <div class="section-title">📍 Address Lookup</div>
+    <input 
+      type="text" 
+      id="addressInput" 
+      placeholder="Enter address (e.g., 6 S Lewis St, Castle Rock)"
+      onkeypress="if(event.key==='Enter') lookupAddress()"
+    />
+    <button class="btn" onclick="lookupAddress()">Find Neighborhood & Distance</button>
+    <div id="addressResult"></div>
+  </div>
 
-    <div class="section">
-      <div class="section-header">
-        🚐 Today's Route Stops
-      </div>
-      <div class="stats-row">
-        <div class="stat-box">
-          <div class="stat-value" id="stopCount">0</div>
-          <div class="stat-label">Stops</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-value" id="totalMiles">0</div>
-          <div class="stat-label">Miles</div>
-        </div>
-      </div>
-      <div class="route-stops" id="routeStops">
-        <div class="no-stops">Click neighborhoods or search addresses to build a route</div>
-      </div>
-      <button class="btn btn-small" onclick="clearRoute()" style="display:none;" id="clearBtn">Clear Route</button>
+  <!-- Customer Search -->
+  <div class="section">
+    <div class="section-title">👥 Customer Search</div>
+    <input 
+      type="text" 
+      id="customerSearch" 
+      placeholder="Search by name..."
+      oninput="searchCustomers(this.value)"
+    />
+    <div class="btn-group">
+      <button class="btn btn-small" onclick="filterCustomers('ALL')" id="filterAll" style="background: #666;">All</button>
+      <button class="btn btn-small" onclick="filterCustomers('MPS')" id="filterMPS" style="background: #ccc; color: #666;">MPS</button>
+      <button class="btn btn-small" onclick="filterCustomers('PSDW')" id="filterPSDW" style="background: #ccc; color: #666;">PSDW</button>
     </div>
+    <div id="customerResults" class="list" style="max-height: 200px; display: none;"></div>
+    <div class="info-text" id="customerCount">Loading customers...</div>
+  </div>
 
-    <div class="section">
-      <div class="section-header">
-        📋 Neighborhoods (260)
+  <!-- Route Stops -->
+  <div class="section">
+    <div class="section-title">🚐 Today's Route</div>
+    <div class="stats">
+      <div class="stat-box">
+        <div class="stat-value" id="stopCount">0</div>
+        <div class="stat-label">Stops</div>
       </div>
-      <input 
-        type="text" 
-        id="neighborhoodFilter" 
-        class="filter-input" 
-        placeholder="Filter neighborhoods..."
-        oninput="filterNeighborhoods(this.value)"
-      />
-      <div class="neighborhoods-list" id="neighborhoodsList"></div>
+      <div class="stat-box">
+        <div class="stat-value" id="totalMiles">0</div>
+        <div class="stat-label">Miles</div>
+      </div>
     </div>
+    <div id="routeStops"></div>
+    <button class="btn btn-small" onclick="clearRoute()" id="clearRouteBtn" style="display: none; margin-top: 10px;">Clear Route</button>
+  </div>
 
-    <div class="section">
-      <div class="section-header">
-        🗺️ Service Regions
-      </div>
-      <div class="region-grid">
-        <div class="region-card north">
-          <div class="region-name">North</div>
-          <div class="region-count">69 areas</div>
-        </div>
-        <div class="region-card east">
-          <div class="region-name">East</div>
-          <div class="region-count">70 areas</div>
-        </div>
-        <div class="region-card south">
-          <div class="region-name">South</div>
-          <div class="region-count">28 areas</div>
-        </div>
-        <div class="region-card castle-rock">
-          <div class="region-name">Castle Rock</div>
-          <div class="region-count">93 areas</div>
-        </div>
-      </div>
-    </div>
+  <!-- Neighborhoods -->
+  <div class="section">
+    <div class="section-title">📋 Neighborhoods</div>
+    <div class="info-text" id="neighborhoodCount">Loading...</div>
+    <input 
+      type="text" 
+      id="neighborhoodFilter" 
+      placeholder="Filter neighborhoods (try 'craig')..."
+      oninput="filterNeighborhoods(this.value)"
+    />
+    <div id="neighborhoodList" class="list"></div>
   </div>
 </div>
 
+<!-- Map -->
 <div id="map"></div>
 
 <script>
 // ============== CONFIGURATION ==============
-const HQ = [39.3722, -104.8561]; // 201 S Wilcox St, Castle Rock
+const HQ_ADDRESS = '201 S Wilcox St, Castle Rock, CO 80104';
+const HQ = [39.3673538, -104.8619428];
 const GOOGLE_API_KEY = 'AIzaSyAG45yOeB8WJx6ZgDbAAOBSgo7WMmXLapk';
 
-// Distance rings (in miles)
-const RINGS = [1, 3, 5, 10, 15, 20];
-
 // Region colors
-const COLORS = {
+const REGION_COLORS = {
+  'castle-rock': '#D46A00',
   'north': '#C62828',
-  'east': '#2E7D32', 
-  'south': '#1565C0',
-  'castle-rock': '#D46A00'
+  'east': '#2E7D32',
+  'south': '#1565C0'
 };
 
-// ============== NEIGHBORHOODS DATA ==============
+// ============== NEIGHBORHOODS (from wall map) ==============
 const NEIGHBORHOODS = [
   // ==================== CASTLE ROCK (93) ====================
-  {name:"Castle North",lat:39.3980,lng:-104.8825,region:"castle-rock"},
-  {name:"Terrain",lat:39.3935782,lng:-104.8191965,region:"castle-rock"},
-  {name:"Mesa",lat:39.395,lng:-104.845,region:"castle-rock"},
-  {name:"Metzler Ranch",lat:39.398,lng:-104.8325,region:"castle-rock"},
-  {name:"Emerson Ranch",lat:39.395,lng:-104.8175,region:"castle-rock"},
-  {name:"Diamond Ridge",lat:39.393,lng:-104.83,region:"castle-rock"},
-  {name:"Allen's Peak",lat:39.388,lng:-104.83,region:"castle-rock"},
-  {name:"Crystal Valley Ranch",lat:39.382,lng:-104.825,region:"castle-rock"},
-  {name:"Founders Village",lat:39.3787,lng:-104.8245,region:"castle-rock"},
-  {name:"Lagae Estates",lat:39.375,lng:-104.815,region:"castle-rock"},
-  {name:"Crystal Oaks",lat:39.385,lng:-104.82,region:"castle-rock"},
-  {name:"Castle Pines Vlg S",lat:39.365,lng:-104.89,region:"castle-rock"},
-  {name:"Ridgeline",lat:39.368,lng:-104.875,region:"castle-rock"},
-  {name:"Castle Vista",lat:39.363,lng:-104.865,region:"castle-rock"},
-  {name:"Caprice",lat:39.360,lng:-104.855,region:"castle-rock"},
-  {name:"Gateway Mesa",lat:39.358,lng:-104.87,region:"castle-rock"},
-  {name:"Cobblestone Ranch",lat:39.371,lng:-104.86,region:"castle-rock"},
-  {name:"Crystal Valley",lat:39.375,lng:-104.825,region:"castle-rock"},
-  {name:"Stonecrest",lat:39.365,lng:-104.84,region:"castle-rock"},
-  {name:"Montaine",lat:39.362,lng:-104.83,region:"castle-rock"},
-  {name:"Southdown Village",lat:39.355,lng:-104.845,region:"castle-rock"},
-  {name:"Pradera West",lat:39.350,lng:-104.850,region:"castle-rock"},
-  {name:"Red Hawk Ridge",lat:39.348,lng:-104.835,region:"castle-rock"},
-  {name:"Villages East",lat:39.345,lng:-104.865,region:"castle-rock"},
-  {name:"Sapphire Pointe",lat:39.342,lng:-104.855,region:"castle-rock"},
-  {name:"Miller's Landing",lat:39.340,lng:-104.845,region:"castle-rock"},
-  {name:"Terrain West",lat:39.395,lng:-104.865,region:"castle-rock"},
-  {name:"Serengeti",lat:39.392,lng:-104.875,region:"castle-rock"},
-  {name:"Happy Canyon",lat:39.385,lng:-104.88,region:"castle-rock"},
-  {name:"Festival",lat:39.38,lng:-104.87,region:"castle-rock"},
-  {name:"Castle Oaks",lat:39.375,lng:-104.865,region:"castle-rock"},
-  {name:"Sommerset",lat:39.368,lng:-104.855,region:"castle-rock"},
-  {name:"The Retreat",lat:39.365,lng:-104.88,region:"castle-rock"},
-  {name:"Plum Creek — Main",lat:39.3505,lng:-104.8602,region:"castle-rock"},
-  {name:"Plum Creek — Brookside",lat:39.3520,lng:-104.8550,region:"castle-rock"},
-  {name:"Plum Creek — Traditions",lat:39.3480,lng:-104.8620,region:"castle-rock"},
-  {name:"Plum Creek — Ridge",lat:39.3510,lng:-104.8480,region:"castle-rock"},
+  // Downtown & Historic Core
+  {name:"Castle Rock Downtown",lat:39.3742,lng:-104.8589,region:"castle-rock"},
+  {name:"Craig & Gould",lat:39.3690,lng:-104.8544,region:"castle-rock"},
+  {name:"Castle Rock Heights",lat:39.3760,lng:-104.8640,region:"castle-rock"},
+  {name:"South Town",lat:39.3700,lng:-104.8580,region:"castle-rock"},
+  {name:"Glover-Baldwin Park",lat:39.3710,lng:-104.8530,region:"castle-rock"},
+
+  // Central & West
+  {name:"Castle Highlands",lat:39.3690,lng:-104.8640,region:"castle-rock"},
+  {name:"Red Hawk",lat:39.3810,lng:-104.8710,region:"castle-rock"},
+  {name:"Sellars Gulch",lat:39.3770,lng:-104.8750,region:"castle-rock"},
+  {name:"Keene Ranch",lat:39.3680,lng:-104.8780,region:"castle-rock"},
+  {name:"Perry Park Village",lat:39.3680,lng:-104.8680,region:"castle-rock"},
+  {name:"Crystal Valley Ranch",lat:39.3580,lng:-104.8730,region:"castle-rock"},
+  {name:"Montaine",lat:39.3550,lng:-104.8810,region:"castle-rock"},
+  {name:"Castle Rock Ranch Acres",lat:39.3600,lng:-104.8650,region:"castle-rock"},
+
+  // South & Southeast
+  {name:"Founders Village",lat:39.3680,lng:-104.8370,region:"castle-rock"},
+  {name:"Castle Oaks",lat:39.3670,lng:-104.8480,region:"castle-rock"},
+  {name:"Plum Creek",lat:39.3580,lng:-104.8560,region:"castle-rock"},
+  {name:"Oakwood",lat:39.3580,lng:-104.8490,region:"castle-rock"},
+  {name:"Dawson Trails",lat:39.3530,lng:-104.8540,region:"castle-rock"},
+  {name:"Hidden Mesa",lat:39.3500,lng:-104.8620,region:"castle-rock"},
+  {name:"Castle Rock Ranches",lat:39.3450,lng:-104.8480,region:"castle-rock"},
+  {name:"Bell Mountain Ranch",lat:39.3440,lng:-104.8640,region:"castle-rock"},
+  {name:"Stone Canon Ranch",lat:39.3400,lng:-104.8560,region:"castle-rock"},
+  {name:"Baldwin Park",lat:39.3710,lng:-104.8460,region:"castle-rock"},
+  {name:"Willow Creek",lat:39.3620,lng:-104.8420,region:"castle-rock"},
+  {name:"Twin Oaks",lat:39.3560,lng:-104.8430,region:"castle-rock"},
+  {name:"Kings Ridge",lat:39.3640,lng:-104.8380,region:"castle-rock"},
+  {name:"Park Preserve",lat:39.3560,lng:-104.8620,region:"castle-rock"},
+  {name:"Castle Ridge East",lat:39.3650,lng:-104.8330,region:"castle-rock"},
+  {name:"Sellers Creek Ranch",lat:39.3510,lng:-104.8450,region:"castle-rock"},
+
+  // North & Northeast
+  {name:"Castlewood Ranch",lat:39.3850,lng:-104.8320,region:"castle-rock"},
+  {name:"Terrain",lat:39.3950,lng:-104.8540,region:"castle-rock"},
+  {name:"Sunstone Village",lat:39.3940,lng:-104.8510,region:"castle-rock"},
+  {name:"Metzler Ranch",lat:39.3980,lng:-104.8460,region:"castle-rock"},
+  {name:"Mesa",lat:39.3910,lng:-104.8600,region:"castle-rock"},
+  {name:"Castle North",lat:39.3960,lng:-104.8620,region:"castle-rock"},
+  {name:"Rhyolite",lat:39.3890,lng:-104.8700,region:"castle-rock"},
+  {name:"Coachline",lat:39.3830,lng:-104.8520,region:"castle-rock"},
+  {name:"Woodlands",lat:39.3850,lng:-104.8540,region:"castle-rock"},
+  {name:"Miller's Landing",lat:39.3860,lng:-104.8410,region:"castle-rock"},
+  {name:"Sapphire Pointe",lat:39.3765,lng:-104.8430,region:"castle-rock"},
+  {name:"Diamond Ridge",lat:39.3930,lng:-104.8320,region:"castle-rock"},
+  {name:"Canterberry Crossing",lat:39.3880,lng:-104.8370,region:"castle-rock"},
+  {name:"Cobblestone Ranch",lat:39.3820,lng:-104.8260,region:"castle-rock"},
+  {name:"Emerson Ranch",lat:39.3930,lng:-104.8300,region:"castle-rock"},
+  {name:"Castle Park Ranch",lat:39.3900,lng:-104.8260,region:"castle-rock"},
+  {name:"Timber Ridge",lat:39.3870,lng:-104.8300,region:"castle-rock"},
+  {name:"Timber Canyon",lat:39.3890,lng:-104.8330,region:"castle-rock"},
+  {name:"Pinon Soleil",lat:39.3940,lng:-104.8400,region:"castle-rock"},
+  {name:"Siena",lat:39.3970,lng:-104.8380,region:"castle-rock"},
+  {name:"The Haven",lat:39.3990,lng:-104.8520,region:"castle-rock"},
+  {name:"Escavera",lat:39.3950,lng:-104.8480,region:"castle-rock"},
+  {name:"Macanta",lat:39.4000,lng:-104.8440,region:"castle-rock"},
+  {name:"Happy Canyon",lat:39.4020,lng:-104.8350,region:"castle-rock"},
+  {name:"Cutters Ridge",lat:39.3910,lng:-104.8560,region:"castle-rock"},
+  {name:"Latigo",lat:39.3880,lng:-104.8560,region:"castle-rock"},
+
+  // Plum Creek sub-areas
+  {name:"Plum Creek — Highlands",lat:39.3560,lng:-104.8580,region:"castle-rock"},
   {name:"Plum Creek — Peninsula",lat:39.3540,lng:-104.8520,region:"castle-rock"},
   {name:"Plum Creek — Fairways",lat:39.3570,lng:-104.8500,region:"castle-rock"},
   {name:"Plum Creek — Augusta Pt",lat:39.3590,lng:-104.8540,region:"castle-rock"},
   {name:"Plum Creek — Ryder Cup",lat:39.3550,lng:-104.8570,region:"castle-rock"},
   {name:"Plum Creek — Players Xing",lat:39.3600,lng:-104.8510,region:"castle-rock"},
+
+  // THE MEADOWS — 32 sub-neighborhoods (Wikipedia + HOA data)
   {name:"Meadows — Alpine Ridge",lat:39.384,lng:-104.908,region:"castle-rock"},
   {name:"Meadows — High Prairie",lat:39.386,lng:-104.902,region:"castle-rock"},
   {name:"Meadows — Tyler Park",lat:39.396,lng:-104.896,region:"castle-rock"},
@@ -628,24 +446,8 @@ const NEIGHBORHOODS = [
   {name:"Meadows — Blacktail",lat:39.411,lng:-104.897,region:"castle-rock"},
   {name:"Meadows — Azure",lat:39.393,lng:-104.9,region:"castle-rock"},
   {name:"Meadows — Cyan Circle",lat:39.412,lng:-104.906,region:"castle-rock"},
-  {name:"Castle Rock Downtown",lat:39.3722,lng:-104.8561,region:"castle-rock"},
-  {name:"Rock Ridge",lat:39.368,lng:-104.848,region:"castle-rock"},
-  {name:"Crowfoot Valley",lat:39.361,lng:-104.842,region:"castle-rock"},
-  {name:"Willow Springs",lat:39.355,lng:-104.838,region:"castle-rock"},
-  {name:"Oakwood",lat:39.378,lng:-104.852,region:"castle-rock"},
-  {name:"Broadmoor",lat:39.382,lng:-104.858,region:"castle-rock"},
-  {name:"Elk Ridge",lat:39.387,lng:-104.863,region:"castle-rock"},
-  {name:"Riverwalk",lat:39.374,lng:-104.844,region:"castle-rock"},
-  {name:"Castle Pines South",lat:39.366,lng:-104.856,region:"castle-rock"},
-  {name:"Red Hawk Village",lat:39.352,lng:-104.848,region:"castle-rock"},
-  {name:"Bellaire",lat:39.358,lng:-104.862,region:"castle-rock"},
-  {name:"Crystal Park",lat:39.363,lng:-104.869,region:"castle-rock"},
-  {name:"Castlewood Ranch",lat:39.369,lng:-104.874,region:"castle-rock"},
-  {name:"The Reserve",lat:39.375,lng:-104.881,region:"castle-rock"},
-  {name:"Village Square",lat:39.371,lng:-104.855,region:"castle-rock"},
-  {name:"Wolfensberger",lat:39.364,lng:-104.851,region:"castle-rock"},
 
-  // ==================== NORTH — HR, Castle Pines, Lone Tree (69) ====================
+  // ==================== NORTH — HR, Castle Pines, Lone Tree (70) ====================
   {name:"HR — Northridge",lat:39.5505,lng:-104.9690,region:"north"},
   {name:"HR — Falcon Hills",lat:39.5480,lng:-104.9580,region:"north"},
   {name:"HR — Richmond Pointe",lat:39.5430,lng:-104.9600,region:"north"},
@@ -816,62 +618,48 @@ const NEIGHBORHOODS = [
   {name:"Lake Woodmoor",lat:39.1100,lng:-104.8700,region:"south"},
   {name:"Gleneagle",lat:39.0410,lng:-104.8230,region:"south"},
   {name:"Forest Lakes",lat:39.1000,lng:-104.9050,region:"south"},
-  {name:"Red Mountain Ranch",lat:39.1150,lng:-104.8950,region:"south"}
+  {name:"Red Mountain Ranch",lat:39.1150,lng:-104.8950,region:"south"},
 ];
 
-// ============== MAP INITIALIZATION ==============
-let map;
-let hqMarker;
-let searchMarker;
-let neighborhoodMarkers = [];
 
-function initMap() {
-  // Create map centered on HQ
-  map = L.map('map').setView(HQ, 11);
-  
-  // Add tile layer
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap contributors'
-  }).addTo(map);
-  
-  // Add HQ marker
-  hqMarker = L.marker(HQ, {
-    icon: L.divIcon({
-      className: 'hq-marker',
-      html: '<div style="background:#d4830a;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:18px;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3)">🏢</div>',
-      iconSize: [32, 32]
-    })
-  }).addTo(map).bindPopup('<strong>Woofies HQ</strong><br>201 S Wilcox St');
-  
-  // Draw distance rings
-  RINGS.forEach((radius, i) => {
-    const radiusMeters = radius * 1609.34;
-    const colors = ['#C62828', '#D46A00', '#2E7D32', '#1565C0', '#9C27B0', '#424242'];
-    L.circle(HQ, {
-      radius: radiusMeters,
-      color: colors[i % colors.length],
-      fillColor: colors[i % colors.length],
-      fillOpacity: 0.05,
-      weight: 2,
-      dashArray: '5, 5'
-    }).addTo(map);
-  });
-  
-  // Add neighborhood markers
-  NEIGHBORHOODS.forEach(n => {
-    const color = COLORS[n.region];
-    const marker = L.circleMarker([n.lat, n.lng], {
-      radius: 5,
-      fillColor: color,
-      color: 'white',
-      weight: 1,
-      fillOpacity: 0.7
-    }).addTo(map).bindPopup(`<strong>${n.name}</strong><br>${n.region}`);
-    neighborhoodMarkers.push(marker);
-  });
+// ============== GLOBAL STATE ==============
+let map;
+let customerMarkers = [];
+let routeStops = [];
+let currentCustomerFilter = 'ALL';
+
+// ============== UTILITY FUNCTIONS ==============
+function calculateDistance(lat1, lng1, lat2, lng2) {
+  const R = 3959; // Earth radius in miles
+  const toRad = (deg) => deg * Math.PI / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+            Math.sin(dLng/2) * Math.sin(dLng/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
 }
 
-// ============== GEOCODING FUNCTIONS ==============
+function findNearestNeighborhood(lat, lng) {
+  let nearest = null;
+  let minDistance = Infinity;
+  
+  NEIGHBORHOODS.forEach(nhood => {
+    const dist = calculateDistance(nhood.lat, nhood.lng, lat, lng);
+    if (dist < minDistance) {
+      minDistance = dist;
+      nearest = nhood;
+    }
+  });
+  
+  return {
+    name: nearest.name,
+    region: nearest.region,
+    distance: minDistance
+  };
+}
+
 async function geocodeAddress(address) {
   try {
     const response = await fetch(
@@ -880,18 +668,13 @@ async function geocodeAddress(address) {
     const data = await response.json();
     
     if (data.status === 'OK' && data.results.length > 0) {
-      const result = data.results[0];
       return {
-        lat: result.geometry.location.lat,
-        lng: result.geometry.location.lng,
-        formatted: result.formatted_address
+        lat: data.results[0].geometry.location.lat,
+        lng: data.results[0].geometry.location.lng,
+        formatted: data.results[0].formatted_address
       };
-    } else if (data.status === 'ZERO_RESULTS') {
-      throw new Error('Address not found');
-    } else if (data.status === 'REQUEST_DENIED') {
-      throw new Error('Geocoding API error: ' + (data.error_message || 'REQUEST_DENIED'));
     } else {
-      throw new Error('Geocoding failed: ' + data.status);
+      throw new Error(data.status);
     }
   } catch (error) {
     console.error('Geocoding error:', error);
@@ -899,29 +682,62 @@ async function geocodeAddress(address) {
   }
 }
 
-function calculateDistance(lat1, lng1, lat2, lng2) {
-  const R = 3959;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLng = (lng2 - lng1) * Math.PI / 180;
-  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-            Math.sin(dLng/2) * Math.sin(dLng/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  return R * c;
-}
-
-function getRegion(distance) {
-  if (distance <= 2) return { tier: 'Core', color: '#C62828' };
-  if (distance <= 5) return { tier: 'Near', color: '#D46A00' };
-  if (distance <= 10) return { tier: 'Mid', color: '#2E7D32' };
-  return { tier: 'Far', color: '#1565C0' };
+// ============== MAP INITIALIZATION ==============
+function initMap() {
+  // Create map
+  map = L.map('map').setView(HQ, 12);
+  
+  // Add tile layer
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors',
+    maxZoom: 19
+  }).addTo(map);
+  
+  // Add HQ marker
+  L.marker(HQ, {
+    icon: L.divIcon({
+      className: 'hq-marker',
+      html: '<div style="background:#FFA000;width:32px;height:32px;border-radius:50%;border:3px solid white;box-shadow:0 4px 12px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;font-size:18px;">🐾</div>',
+      iconSize: [32, 32]
+    })
+  }).addTo(map).bindPopup('<strong>Woofies HQ</strong><br>201 S Wilcox St<br>Castle Rock, CO');
+  
+  // Add distance rings
+  [1, 3, 5, 10, 15, 20].forEach((radius, i) => {
+    const colors = ['#C62828', '#D46A00', '#2E7D32', '#1565C0', '#9C27B0', '#424242'];
+    L.circle(HQ, {
+      radius: radius * 1609.34,
+      color: colors[i],
+      fillColor: colors[i],
+      fillOpacity: 0.05,
+      weight: 2,
+      dashArray: '5, 5'
+    }).addTo(map);
+  });
+  
+  // Add neighborhood markers
+  NEIGHBORHOODS.forEach(n => {
+    const color = REGION_COLORS[n.region];
+    const distance = calculateDistance(HQ[0], HQ[1], n.lat, n.lng);
+    
+    // Distance-based opacity
+    let opacity = 0.3 + Math.min(distance / 20, 0.7);
+    
+    L.circleMarker([n.lat, n.lng], {
+      radius: 5,
+      fillColor: color,
+      color: 'white',
+      weight: 1,
+      fillOpacity: opacity
+    }).addTo(map).bindPopup(`<strong>${n.name}</strong><br>${n.region}<br>${distance.toFixed(1)} mi from HQ`);
+  });
 }
 
 // ============== ADDRESS LOOKUP ==============
 async function lookupAddress() {
   const input = document.getElementById('addressInput');
+  const resultDiv = document.getElementById('addressResult');
   const address = input.value.trim();
-  const resultDiv = document.getElementById('result');
   
   if (!address) {
     resultDiv.innerHTML = '<div class="result-box error">Please enter an address</div>';
@@ -932,248 +748,268 @@ async function lookupAddress() {
   
   try {
     const location = await geocodeAddress(address);
-    const distance = calculateDistance(HQ[0], HQ[1], location.lat, location.lng);
-    const region = getRegion(distance);
+    const distFromHQ = calculateDistance(HQ[0], HQ[1], location.lat, location.lng);
+    const neighborhood = findNearestNeighborhood(location.lat, location.lng);
     
-    if (searchMarker) {
-      map.removeLayer(searchMarker);
-    }
-    searchMarker = L.marker([location.lat, location.lng], {
+    // Add marker to map
+    L.marker([location.lat, location.lng], {
       icon: L.divIcon({
         className: 'search-marker',
-        html: '<div style="background:#e94560;width:24px;height:24px;border-radius:50%;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3)"></div>',
-        iconSize: [24, 24]
+        html: '<div style="background:#e94560;width:20px;height:20px;border-radius:50%;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3)"></div>',
+        iconSize: [20, 20]
       })
-    }).addTo(map).bindPopup(`<strong>Search Result</strong><br>${location.formatted}`);
+    }).addTo(map).bindPopup(`
+      <strong>Search Result</strong><br>
+      ${location.formatted}<br>
+      <strong>Neighborhood:</strong> ${neighborhood.name}
+    `).openPopup();
     
-    map.setView([location.lat, location.lng], 13);
-    
-    // Store last lookup for adding to route
-    window.lastLookup = {
-      name: location.formatted,
-      lat: location.lat,
-      lng: location.lng,
-      distance: distance
-    };
+    map.setView([location.lat, location.lng], 15);
     
     resultDiv.innerHTML = `
       <div class="result-box success">
         <strong>📍 ${location.formatted}</strong><br><br>
-        <strong>Distance from HQ:</strong> ${distance.toFixed(1)} miles<br>
-        <strong>Service Tier:</strong> <span style="color:${region.color}">${region.tier}</span><br>
-        <strong>Drive Time:</strong> ~${Math.ceil(distance * 2)} minutes<br><br>
-        <button class="btn btn-small" onclick="addLastLookupToRoute()">Add to Route</button>
+        <strong>Neighborhood:</strong> ${neighborhood.name}<br>
+        <strong>Distance from HQ:</strong> ${distFromHQ.toFixed(2)} miles<br>
+        <strong>Drive Time:</strong> ~${Math.ceil(distFromHQ * 2)} minutes
       </div>
     `;
   } catch (error) {
     resultDiv.innerHTML = `
       <div class="result-box error">
         <strong>❌ Address Not Found</strong><br>
-        ${error.message}<br><br>
-        Try: "123 Main St, Parker" or "Founders Village"
+        ${error.message}
       </div>
     `;
   }
 }
 
-// ============== ROUTE MANAGEMENT ==============
-let routeStops = [];
-let draggedElement = null;
-
-function addToRoute(name, lat, lng) {
-  const distance = calculateDistance(HQ[0], HQ[1], lat, lng);
+// ============== CUSTOMER MANAGEMENT ==============
+function filterCustomers(type) {
+  currentCustomerFilter = type;
   
-  // Check if already in route
-  if (routeStops.some(stop => stop.name === name)) {
-    alert('This stop is already in your route!');
+  // Update button styles
+  document.getElementById('filterAll').style.background = type === 'ALL' ? '#666' : '#ccc';
+  document.getElementById('filterAll').style.color = type === 'ALL' ? 'white' : '#666';
+  document.getElementById('filterMPS').style.background = type === 'MPS' ? '#FFA000' : '#ccc';
+  document.getElementById('filterMPS').style.color = type === 'MPS' ? 'white' : '#666';
+  document.getElementById('filterPSDW').style.background = type === 'PSDW' ? '#1E88E5' : '#ccc';
+  document.getElementById('filterPSDW').style.color = type === 'PSDW' ? 'white' : '#666';
+  
+  searchCustomers(document.getElementById('customerSearch').value);
+}
+
+function searchCustomers(query) {
+  const resultsDiv = document.getElementById('customerResults');
+  
+  if (!window.CUSTOMERS) {
+    resultsDiv.style.display = 'none';
     return;
   }
   
-  routeStops.push({ name, lat, lng, distance });
-  renderRoute();
-  updateStats();
-}
-
-function addLastLookupToRoute() {
-  if (window.lastLookup) {
-    addToRoute(window.lastLookup.name, window.lastLookup.lat, window.lastLookup.lng);
-  }
-}
-
-function removeStop(index) {
-  routeStops.splice(index, 1);
-  renderRoute();
-  updateStats();
-}
-
-function clearRoute() {
-  if (confirm('Clear all stops from route?')) {
-    routeStops = [];
-    renderRoute();
-    updateStats();
-  }
-}
-
-function renderRoute() {
-  const container = document.getElementById('routeStops');
-  const clearBtn = document.getElementById('clearBtn');
+  // Clear markers
+  customerMarkers.forEach(m => map.removeLayer(m));
+  customerMarkers = [];
   
-  if (routeStops.length === 0) {
-    container.innerHTML = '<div class="no-stops">Click neighborhoods or search addresses to build a route</div>';
-    clearBtn.style.display = 'none';
+  if (!query && currentCustomerFilter === 'ALL') {
+    resultsDiv.style.display = 'none';
     return;
   }
   
-  clearBtn.style.display = 'block';
+  // Filter customers
+  const filtered = CUSTOMERS.filter(c => {
+    const matchesType = currentCustomerFilter === 'ALL' || c.type === currentCustomerFilter;
+    const matchesQuery = !query || 
+                        c.name.toLowerCase().includes(query.toLowerCase()) ||
+                        c.neighborhood.toLowerCase().includes(query.toLowerCase());
+    return matchesType && matchesQuery;
+  });
   
-  container.innerHTML = routeStops.map((stop, i) => `
-    <div class="route-stop" draggable="true" data-index="${i}">
-      <div class="stop-number">${i + 1}</div>
-      <div class="stop-info">
-        <div class="stop-name">${stop.name}</div>
-        <div class="stop-distance">${stop.distance.toFixed(1)} mi from HQ</div>
-      </div>
-      <button class="stop-remove" onclick="removeStop(${i})">×</button>
+  if (filtered.length === 0) {
+    resultsDiv.innerHTML = '<div class="empty-state">No customers found</div>';
+    resultsDiv.style.display = 'block';
+    return;
+  }
+  
+  // Show results
+  const displayLimit = 50;
+  resultsDiv.innerHTML = filtered.slice(0, displayLimit).map(c => `
+    <div class="list-item" onclick="zoomToCustomer(${c.lat}, ${c.lng}, '${c.name.replace(/'/g, "\\'")}')">
+      <span class="customer-type ${c.type.toLowerCase()}">${c.type}</span>
+      <strong>${c.name}</strong><br>
+      <small style="color: #666;">${c.neighborhood}</small>
     </div>
   `).join('');
   
-  // Add drag and drop listeners
-  const stops = container.querySelectorAll('.route-stop');
-  stops.forEach(stop => {
-    stop.addEventListener('dragstart', handleDragStart);
-    stop.addEventListener('dragover', handleDragOver);
-    stop.addEventListener('drop', handleDrop);
-    stop.addEventListener('dragend', handleDragEnd);
+  if (filtered.length > displayLimit) {
+    resultsDiv.innerHTML += `<div class="info-text">Showing ${displayLimit} of ${filtered.length}</div>`;
+  }
+  
+  resultsDiv.style.display = 'block';
+  
+  // Show on map if <= 100
+  if (filtered.length <= 100) {
+    filtered.forEach(c => {
+      const color = c.type === 'MPS' ? '#FFA000' : '#1E88E5';
+      const marker = L.circleMarker([c.lat, c.lng], {
+        radius: 6,
+        fillColor: color,
+        color: 'white',
+        weight: 2,
+        fillOpacity: 0.8
+      }).addTo(map).bindPopup(`
+        <strong>${c.name}</strong><br>
+        <span style="color:${color}">${c.type}</span><br>
+        ${c.neighborhood}
+      `);
+      customerMarkers.push(marker);
+    });
+  }
+}
+
+function zoomToCustomer(lat, lng, name) {
+  map.setView([lat, lng], 16);
+  customerMarkers.forEach(m => {
+    const pos = m.getLatLng();
+    if (Math.abs(pos.lat - lat) < 0.0001 && Math.abs(pos.lng - lng) < 0.0001) {
+      m.openPopup();
+    }
   });
 }
 
-function handleDragStart(e) {
-  draggedElement = this;
-  this.classList.add('dragging');
-  e.dataTransfer.effectAllowed = 'move';
+// ============== ROUTE MANAGEMENT ==============
+function addToRoute(name, lat, lng) {
+  routeStops.push({ name, lat, lng });
+  updateRouteDisplay();
 }
 
-function handleDragOver(e) {
-  if (e.preventDefault) {
-    e.preventDefault();
-  }
-  e.dataTransfer.dropEffect = 'move';
-  return false;
+function removeFromRoute(index) {
+  routeStops.splice(index, 1);
+  updateRouteDisplay();
 }
 
-function handleDrop(e) {
-  if (e.stopPropagation) {
-    e.stopPropagation();
+function clearRoute() {
+  routeStops = [];
+  updateRouteDisplay();
+}
+
+function updateRouteDisplay() {
+  const container = document.getElementById('routeStops');
+  const clearBtn = document.getElementById('clearRouteBtn');
+  
+  if (routeStops.length === 0) {
+    container.innerHTML = '<div class="empty-state">No stops added</div>';
+    clearBtn.style.display = 'none';
+    document.getElementById('stopCount').textContent = '0';
+    document.getElementById('totalMiles').textContent = '0';
+    return;
   }
   
-  if (draggedElement !== this) {
-    const draggedIndex = parseInt(draggedElement.dataset.index);
-    const targetIndex = parseInt(this.dataset.index);
-    
-    // Reorder array
-    const item = routeStops.splice(draggedIndex, 1)[0];
-    routeStops.splice(targetIndex, 0, item);
-    
-    renderRoute();
-    updateStats();
+  // Calculate total distance
+  let totalMiles = 0;
+  for (let i = 0; i < routeStops.length; i++) {
+    const from = i === 0 ? HQ : [routeStops[i-1].lat, routeStops[i-1].lng];
+    const to = [routeStops[i].lat, routeStops[i].lng];
+    totalMiles += calculateDistance(from[0], from[1], to[0], to[1]);
   }
   
-  return false;
-}
-
-function handleDragEnd(e) {
-  this.classList.remove('dragging');
-}
-
-function updateStats() {
+  container.innerHTML = routeStops.map((stop, i) => `
+    <div class="route-stop">
+      <div>
+        <strong>${i + 1}.</strong> ${stop.name}
+      </div>
+      <span class="stop-remove" onclick="removeFromRoute(${i})">×</span>
+    </div>
+  `).join('');
+  
+  clearBtn.style.display = 'block';
   document.getElementById('stopCount').textContent = routeStops.length;
-  
-  // Calculate total distance (simplified - just sum of all distances)
-  const totalDistance = routeStops.reduce((sum, stop) => sum + stop.distance, 0);
-  document.getElementById('totalMiles').textContent = totalDistance.toFixed(0);
+  document.getElementById('totalMiles').textContent = totalMiles.toFixed(1);
 }
 
-// ============== NEIGHBORHOODS ==============
-function buildNeighborhoodsList() {
-  const container = document.getElementById('neighborhoodsList');
+// ============== NEIGHBORHOOD FILTERING ==============
+function buildNeighborhoodList() {
+  const container = document.getElementById('neighborhoodList');
+  const counter = document.getElementById('neighborhoodCount');
+  
+  counter.textContent = `${NEIGHBORHOODS.length} neighborhoods loaded ✓`;
+  counter.style.color = '#2E7D32';
   
   container.innerHTML = NEIGHBORHOODS.map(n => `
-    <div class="neighborhood-item" onclick="addToRoute('${n.name.replace(/'/g, "\\'")}', ${n.lat}, ${n.lng})">
-      <div class="neighborhood-name">${n.name}</div>
-      <div class="neighborhood-badge ${n.region}">${n.region.toUpperCase()}</div>
+    <div class="list-item" onclick="addToRoute('${n.name.replace(/'/g, "\\'")}', ${n.lat}, ${n.lng})">
+      <strong>${n.name}</strong><br>
+      <small style="color: ${REGION_COLORS[n.region]};">${n.region.toUpperCase()}</small>
     </div>
   `).join('');
 }
 
 function filterNeighborhoods(query) {
-  const container = document.getElementById('neighborhoodsList');
-  const lowerQuery = query.toLowerCase();
+  const container = document.getElementById('neighborhoodList');
+  const counter = document.getElementById('neighborhoodCount');
   
-  const filtered = NEIGHBORHOODS.filter(n => 
-    n.name.toLowerCase().includes(lowerQuery) ||
-    n.region.toLowerCase().includes(lowerQuery)
-  );
-  
-  container.innerHTML = filtered.map(n => `
-    <div class="neighborhood-item" onclick="addToRoute('${n.name.replace(/'/g, "\\'")}', ${n.lat}, ${n.lng})">
-      <div class="neighborhood-name">${n.name}</div>
-      <div class="neighborhood-badge ${n.region}">${n.region.toUpperCase()}</div>
-    </div>
-  `).join('');
-  
-  if (filtered.length === 0) {
-    container.innerHTML = '<div class="no-stops">No neighborhoods found</div>';
-  }
-}
-
-// ============== AUTOCOMPLETE ==============
-let autocomplete;
-
-function initAutocomplete() {
-  const input = document.getElementById('addressInput');
-  
-  if (!window.google || !window.google.maps || !window.google.maps.places) {
-    console.log('Google Places not ready, retrying...');
-    setTimeout(initAutocomplete, 500);
+  if (!query) {
+    buildNeighborhoodList();
     return;
   }
   
-  autocomplete = new google.maps.places.Autocomplete(input, {
-    componentRestrictions: { country: 'us' },
-    bounds: {
-      south: 39.0,
-      west: -105.3,
-      north: 39.8,
-      east: -104.3
-    },
-    types: ['address']
-  });
+  const filtered = NEIGHBORHOODS.filter(n => 
+    n.name.toLowerCase().includes(query.toLowerCase()) ||
+    n.region.toLowerCase().includes(query.toLowerCase())
+  );
   
-  autocomplete.addListener('place_changed', () => {
-    const place = autocomplete.getPlace();
-    if (place.geometry) {
-      setTimeout(lookupAddress, 100);
-    }
-  });
+  counter.textContent = `Showing ${filtered.length} of ${NEIGHBORHOODS.length}`;
+  counter.style.color = filtered.length > 0 ? '#1565C0' : '#C62828';
+  
+  if (filtered.length === 0) {
+    container.innerHTML = '<div class="empty-state">No neighborhoods found</div>';
+    return;
+  }
+  
+  container.innerHTML = filtered.map(n => `
+    <div class="list-item" onclick="addToRoute('${n.name.replace(/'/g, "\\'")}', ${n.lat}, ${n.lng})">
+      <strong>${n.name}</strong><br>
+      <small style="color: ${REGION_COLORS[n.region]};">${n.region.toUpperCase()}</small>
+    </div>
+  `).join('');
 }
 
 // ============== INITIALIZATION ==============
 window.addEventListener('load', () => {
   initMap();
-  buildNeighborhoodsList();
-  setTimeout(initAutocomplete, 1000);
-});
-
-document.addEventListener('DOMContentLoaded', () => {
+  buildNeighborhoodList();
+  
+  // Initialize customer count
+  if (window.CUSTOMERS) {
+    const mpsCount = CUSTOMERS.filter(c => c.type === 'MPS').length;
+    const psdwCount = CUSTOMERS.filter(c => c.type === 'PSDW').length;
+    document.getElementById('customerCount').textContent = 
+      `${CUSTOMERS.length} customers (${mpsCount} MPS, ${psdwCount} PSDW)`;
+  } else {
+    document.getElementById('customerCount').textContent = 'Customer data not loaded';
+  }
+  
+  // Initialize autocomplete
   const input = document.getElementById('addressInput');
-  if (input) {
-    input.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
-        lookupAddress();
+  if (window.google && window.google.maps && window.google.maps.places) {
+    const autocomplete = new google.maps.places.Autocomplete(input, {
+      componentRestrictions: { country: 'us' },
+      bounds: {
+        south: 39.0,
+        west: -105.3,
+        north: 39.8,
+        east: -104.3
+      }
+    });
+    
+    autocomplete.addListener('place_changed', () => {
+      const place = autocomplete.getPlace();
+      if (place.geometry) {
+        setTimeout(lookupAddress, 100);
       }
     });
   }
 });
+
 </script>
 </body>
 </html>
