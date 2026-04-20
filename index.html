@@ -1010,12 +1010,12 @@ function updateMapRoutes() {
     if (groomer.route.length === 0) return;
     
     // Get coordinates
-    const coords = [HQ];
+    const coords = [[39.3673538, -104.8619428]]; // HQ
     groomer.route.forEach(customerId => {
-      const customer = CUSTOMERS.find(c => c.id === customerId);
+      const customer = CUSTOMERS.find(c => String(c.id) === String(customerId));
       if (customer) coords.push([customer.lat, customer.lng]);
     });
-    coords.push(HQ); // Return to HQ
+    coords.push([39.3673538, -104.8619428]); // Return to HQ
     
     // Draw polyline
     const polyline = L.polyline(coords, {
@@ -1027,7 +1027,7 @@ function updateMapRoutes() {
     
     // Add numbered markers
     groomer.route.forEach((customerId, index) => {
-      const customer = CUSTOMERS.find(c => c.id === customerId);
+      const customer = CUSTOMERS.find(c => String(c.id) === String(customerId));
       if (!customer) return;
       
       const marker = L.marker([customer.lat, customer.lng], {
@@ -1146,7 +1146,7 @@ function renderCustomers() {
   );
   
   container.innerHTML = filtered.map(customer => `
-    <div class="customer-item" draggable="true" data-customer-id="${customer.id}" onclick="assignCustomerToActiveGroomer('${customer.id}')">
+    <div class="customer-item" draggable="true" data-customer-id="${customer.id}">
       <div>
         <div class="customer-name">${customer.name}</div>
         <div class="customer-neighborhood">${customer.neighborhood}</div>
@@ -1157,9 +1157,12 @@ function renderCustomers() {
   
   document.getElementById('customerCountDisplay').textContent = filtered.length;
   
-  // Add drag event listeners
+  // Add drag and click event listeners
   container.querySelectorAll('.customer-item').forEach(item => {
     item.addEventListener('dragstart', handleCustomerDragStart);
+    item.addEventListener('click', function() {
+      assignCustomerToActiveGroomer(this.dataset.customerId);
+    });
   });
 }
 
@@ -1188,7 +1191,7 @@ function renderNeighborhoods() {
   container.innerHTML = filtered.map(neighborhood => {
     const count = neighborhoodCounts[neighborhood.name] || 0;
     return `
-      <div class="customer-item" onclick="assignNeighborhoodToActiveGroomer('${neighborhood.name.replace(/'/g, "\\'")}')">
+      <div class="customer-item" data-neighborhood-name="${neighborhood.name.replace(/"/g, '&quot;')}">
         <div>
           <div class="customer-name">${neighborhood.name}</div>
           <div class="customer-neighborhood">${neighborhood.region.toUpperCase()} • ${count} customer${count !== 1 ? 's' : ''}</div>
@@ -1199,6 +1202,13 @@ function renderNeighborhoods() {
   }).join('');
   
   document.getElementById('neighborhoodCountDisplay').textContent = filtered.length;
+  
+  // Add click event listeners
+  container.querySelectorAll('.customer-item').forEach(item => {
+    item.addEventListener('click', function() {
+      assignNeighborhoodToActiveGroomer(this.dataset.neighborhoodName);
+    });
+  });
 }
 
 function filterNeighborhoods() {
@@ -1476,30 +1486,35 @@ function handleRouteDrop(evt) {
 }
 
 function assignCustomerToGroomer(customerId, groomerId) {
-  const customer = CUSTOMERS.find(c => c.id === customerId);
+  const customer = CUSTOMERS.find(c => String(c.id) === String(customerId));
   const groomer = groomers.find(g => g.id === groomerId);
   
-  if (!customer || !groomer) return;
+  if (!customer || !groomer) {
+    console.error('Customer or groomer not found:', customerId, groomerId);
+    return;
+  }
   
   customer.assignedTo = groomerId;
-  groomer.route.push(customerId);
+  groomer.route.push(customer.id); // Use original ID format
   
   saveGroomersToStorage();
   renderCustomers();
+  renderNeighborhoods();
   renderGroomers();
   updateMapRoutes();
 }
 
 function removeFromRoute(groomerId, customerId) {
   const groomer = groomers.find(g => g.id === groomerId);
-  const customer = CUSTOMERS.find(c => c.id === customerId);
+  const customer = CUSTOMERS.find(c => String(c.id) === String(customerId));
   
   if (groomer && customer) {
-    groomer.route = groomer.route.filter(id => id !== customerId);
+    groomer.route = groomer.route.filter(id => String(id) !== String(customerId));
     customer.assignedTo = null;
     
     saveGroomersToStorage();
     renderCustomers();
+    renderNeighborhoods();
     renderGroomers();
     updateMapRoutes();
   }
@@ -1545,24 +1560,33 @@ function calculateGroomerStats(groomer) {
   }
   
   // Distance from HQ to first stop
-  const firstCustomer = CUSTOMERS.find(c => c.id === groomer.route[0]);
-  if (firstCustomer) {
-    miles += calculateDistance(HQ[0], HQ[1], firstCustomer.lat, firstCustomer.lng);
+  const firstCustomer = CUSTOMERS.find(c => String(c.id) === String(groomer.route[0]));
+  if (firstCustomer && firstCustomer.lat && firstCustomer.lng) {
+    const dist = calculateDistance(HQ[0], HQ[1], firstCustomer.lat, firstCustomer.lng);
+    if (isFinite(dist) && dist < 1000) { // Sanity check: should be < 1000 miles
+      miles += dist;
+    }
   }
   
   // Distance between stops
   for (let i = 0; i < groomer.route.length - 1; i++) {
-    const from = CUSTOMERS.find(c => c.id === groomer.route[i]);
-    const to = CUSTOMERS.find(c => c.id === groomer.route[i + 1]);
-    if (from && to) {
-      miles += calculateDistance(from.lat, from.lng, to.lat, to.lng);
+    const from = CUSTOMERS.find(c => String(c.id) === String(groomer.route[i]));
+    const to = CUSTOMERS.find(c => String(c.id) === String(groomer.route[i + 1]));
+    if (from && to && from.lat && from.lng && to.lat && to.lng) {
+      const dist = calculateDistance(from.lat, from.lng, to.lat, to.lng);
+      if (isFinite(dist) && dist < 1000) { // Sanity check
+        miles += dist;
+      }
     }
   }
   
   // Distance back to HQ
-  const lastCustomer = CUSTOMERS.find(c => c.id === groomer.route[groomer.route.length - 1]);
-  if (lastCustomer) {
-    miles += calculateDistance(lastCustomer.lat, lastCustomer.lng, HQ[0], HQ[1]);
+  const lastCustomer = CUSTOMERS.find(c => String(c.id) === String(groomer.route[groomer.route.length - 1]));
+  if (lastCustomer && lastCustomer.lat && lastCustomer.lng) {
+    const dist = calculateDistance(lastCustomer.lat, lastCustomer.lng, HQ[0], HQ[1]);
+    if (isFinite(dist) && dist < 1000) { // Sanity check
+      miles += dist;
+    }
   }
   
   // Estimate hours (30 mph avg + 30 min per stop)
