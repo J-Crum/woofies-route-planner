@@ -158,6 +158,16 @@ body {
   color: #1565c0;
 }
 
+.customer-type.addr {
+  background: #f3e5f5;
+  color: #6a1b9a;
+}
+
+.customer-type.both {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
 /* Center - Map */
 .map-panel {
   position: relative;
@@ -447,6 +457,48 @@ body {
   border-color: #333;
 }
 
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 12px;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.tab {
+  flex: 1;
+  padding: 10px;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: #666;
+  transition: all 0.2s;
+  text-transform: uppercase;
+}
+
+.tab:hover {
+  color: #FFA000;
+}
+
+.tab.active {
+  color: #FFA000;
+  border-bottom-color: #FFA000;
+}
+
+.tab-content {
+  display: none;
+  flex: 1;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.tab-content.active {
+  display: flex;
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
@@ -482,14 +534,53 @@ body {
     </div>
   </div>
 
-  <!-- Left: Customers -->
+  <!-- Left: Customers & Neighborhoods -->
   <div class="customers-panel">
     <div class="panel-header">
-      <div class="panel-title">CUSTOMERS (<span id="customerCountDisplay">0</span>)</div>
-      <input type="text" class="search-box" id="customerSearchBox" placeholder="Search customers..." oninput="filterCustomers()">
+      <!-- Active Groomer Selector -->
+      <div style="margin-bottom: 12px;">
+        <label style="display: block; font-size: 11px; color: #666; margin-bottom: 4px; text-transform: uppercase; font-weight: 600;">Active Groomer:</label>
+        <select id="activeGroomerSelect" onchange="updateActiveGroomer()" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; font-weight: 500;">
+          <option value="">Select groomer to assign...</option>
+        </select>
+      </div>
+      
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('customers')">Customers</button>
+        <button class="tab" onclick="switchTab('neighborhoods')">Neighborhoods</button>
+        <button class="tab" onclick="switchTab('address')">Address</button>
+      </div>
     </div>
-    <div class="customer-list" id="customerList">
-      <!-- Populated by JavaScript -->
+    
+    <!-- Tab Content -->
+    <div id="customersTab" class="tab-content active">
+      <div style="padding: 12px 12px 0 12px;">
+        <div class="panel-title" style="margin-bottom: 8px;">CUSTOMERS (<span id="customerCountDisplay">0</span>)</div>
+        <input type="text" class="search-box" id="customerSearchBox" placeholder="Search customers..." oninput="filterCustomers()">
+      </div>
+      <div class="customer-list" id="customerList">
+        <!-- Populated by JavaScript -->
+      </div>
+    </div>
+    
+    <div id="neighborhoodsTab" class="tab-content">
+      <div style="padding: 12px 12px 0 12px;">
+        <div class="panel-title" style="margin-bottom: 8px;">NEIGHBORHOODS (<span id="neighborhoodCountDisplay">260</span>)</div>
+        <input type="text" class="search-box" id="neighborhoodSearchBox" placeholder="Search neighborhoods..." oninput="filterNeighborhoods()">
+      </div>
+      <div class="customer-list" id="neighborhoodList">
+        <!-- Populated by JavaScript -->
+      </div>
+    </div>
+    
+    <div id="addressTab" class="tab-content">
+      <div style="padding: 12px;">
+        <div class="panel-title" style="margin-bottom: 12px;">ADDRESS LOOKUP</div>
+        <input type="text" class="search-box" id="addressInput" placeholder="Enter address..." style="margin-bottom: 12px;">
+        <button class="btn btn-primary" onclick="lookupAddress()" style="width: 100%; margin-bottom: 16px;">📍 Find Address</button>
+        <div id="addressResult"></div>
+      </div>
     </div>
   </div>
 
@@ -544,6 +635,7 @@ const SHEET_ID = '1-m1rWknWWgjblm3cB9DvbeLueIYUwi4A63npEafyVSk';
 const API_KEY = 'AIzaSyCszqzMWTZQs9VKgS4QAfR-tdMwxdwdx4U';
 const RANGE = 'Woofies-Castlerock_Clients-All-Time-January-1-1900-to-January-1-3000-by-Zip-Code_2026-03-09!A:M';
 const HQ = [39.3673538, -104.8619428];
+const GOOGLE_API_KEY = 'AIzaSyCszqzMWTZQs9VKgS4QAfR-tdMwxdwdx4U';
 
 // ============== GLOBAL STATE ==============
 let CUSTOMERS = [];
@@ -552,6 +644,234 @@ let map = null;
 let routePolylines = [];
 let customerMarkers = [];
 let selectedColor = '#FFA000';
+let activeGroomerId = null;
+let currentTab = 'customers';
+
+// ============== NEIGHBORHOODS DATA (260) ==============
+const NEIGHBORHOODS = [
+  {name:"Castle Rock Downtown",lat:39.3742,lng:-104.8589,region:"castle-rock"},
+  {name:"Craig & Gould",lat:39.3690,lng:-104.8544,region:"castle-rock"},
+  {name:"Castle Rock Heights",lat:39.3760,lng:-104.8640,region:"castle-rock"},
+  {name:"South Town",lat:39.3700,lng:-104.8580,region:"castle-rock"},
+  {name:"Glover-Baldwin Park",lat:39.3710,lng:-104.8530,region:"castle-rock"},
+  {name:"Castle Highlands",lat:39.3690,lng:-104.8640,region:"castle-rock"},
+  {name:"Red Hawk",lat:39.3810,lng:-104.8710,region:"castle-rock"},
+  {name:"Sellars Gulch",lat:39.3770,lng:-104.8750,region:"castle-rock"},
+  {name:"Keene Ranch",lat:39.3680,lng:-104.8780,region:"castle-rock"},
+  {name:"Perry Park Village",lat:39.3680,lng:-104.8680,region:"castle-rock"},
+  {name:"Crystal Valley Ranch",lat:39.3580,lng:-104.8730,region:"castle-rock"},
+  {name:"Montaine",lat:39.3550,lng:-104.8810,region:"castle-rock"},
+  {name:"Castle Rock Ranch Acres",lat:39.3600,lng:-104.8650,region:"castle-rock"},
+  {name:"Festival Park",lat:39.3620,lng:-104.8580,region:"castle-rock"},
+  {name:"The Meadows",lat:39.3740,lng:-104.8510,region:"castle-rock"},
+  {name:"The Canyons",lat:39.3480,lng:-104.8590,region:"castle-rock"},
+  {name:"Castle Oaks",lat:39.3520,lng:-104.8670,region:"castle-rock"},
+  {name:"Miller's Landing",lat:39.3640,lng:-104.8740,region:"castle-rock"},
+  {name:"Terrain",lat:39.3450,lng:-104.8730,region:"castle-rock"},
+  {name:"Cobblestone Ranch",lat:39.3560,lng:-104.8590,region:"castle-rock"},
+  {name:"Castlewood Ranch",lat:39.3440,lng:-104.8650,region:"castle-rock"},
+  {name:"Founders Village",lat:39.3650,lng:-104.8620,region:"castle-rock"},
+  {name:"Hidden Pointe",lat:39.3580,lng:-104.8680,region:"castle-rock"},
+  {name:"The Retreat",lat:39.3510,lng:-104.8710,region:"castle-rock"},
+  {name:"Ridgegate",lat:39.5390,lng:-104.8650,region:"north"},
+  {name:"Terrain at Castle Rock",lat:39.3470,lng:-104.8745,region:"castle-rock"},
+  {name:"Plum Creek",lat:39.3530,lng:-104.8520,region:"castle-rock"},
+  {name:"Bell Mountain Ranch",lat:39.3390,lng:-104.8670,region:"castle-rock"},
+  {name:"Crowfoot Valley",lat:39.3810,lng:-104.8640,region:"castle-rock"},
+  {name:"Stonegate",lat:39.4950,lng:-104.8420,region:"north"},
+  {name:"Happy Canyon",lat:39.3950,lng:-104.8720,region:"castle-rock"},
+  {name:"The Villages at Castle Rock",lat:39.3680,lng:-104.8560,region:"castle-rock"},
+  {name:"Metzler Ranch",lat:39.3520,lng:-104.8540,region:"castle-rock"},
+  {name:"Castle Rock Estates",lat:39.3780,lng:-104.8580,region:"castle-rock"},
+  {name:"Siena at Castle Rock",lat:39.3670,lng:-104.8480,region:"castle-rock"},
+  {name:"Hawks Nest",lat:39.3850,lng:-104.8590,region:"castle-rock"},
+  {name:"The Villas at Sunny Acres",lat:39.3750,lng:-104.8470,region:"castle-rock"},
+  {name:"Ridge at Castle Pines North",lat:39.4440,lng:-104.8680,region:"north"},
+  {name:"Buffalo Ridge",lat:39.3620,lng:-104.8800,region:"castle-rock"},
+  {name:"Chatfield Farms",lat:39.5340,lng:-105.0750,region:"west"},
+  {name:"The Timbers",lat:39.3490,lng:-104.8610,region:"castle-rock"},
+  {name:"Castlewood",lat:39.3640,lng:-104.8510,region:"castle-rock"},
+  {name:"The Fairways",lat:39.3580,lng:-104.8630,region:"castle-rock"},
+  {name:"Acres Green",lat:39.5870,lng:-104.8480,region:"north"},
+  {name:"Castle Pines Village",lat:39.4520,lng:-104.8830,region:"north"},
+  {name:"Lagae Ranch",lat:39.3720,lng:-104.8440,region:"castle-rock"},
+  {name:"Homestead",lat:39.3610,lng:-104.8540,region:"castle-rock"},
+  {name:"Jordan Ranch",lat:39.5120,lng:-104.7890,region:"north"},
+  {name:"Sapphire Pointe",lat:39.3470,lng:-104.8560,region:"castle-rock"},
+  {name:"Oakwood",lat:39.3550,lng:-104.8560,region:"castle-rock"},
+  {name:"Castle Pines North",lat:39.4680,lng:-104.8730,region:"north"},
+  {name:"Castle Pines",lat:39.4480,lng:-104.8960,region:"north"},
+  {name:"Heritage Hills",lat:39.5710,lng:-104.8590,region:"north"},
+  {name:"Meridian Village",lat:39.5170,lng:-104.7750,region:"north"},
+  {name:"Hess Homestead",lat:39.3700,lng:-104.8410,region:"castle-rock"},
+  {name:"Canyon View Estates",lat:39.3550,lng:-104.8450,region:"castle-rock"},
+  {name:"Sunstone Village",lat:39.3660,lng:-104.8390,region:"castle-rock"},
+  {name:"Lions Gate",lat:39.3690,lng:-104.8340,region:"castle-rock"},
+  {name:"Escavera",lat:39.3560,lng:-104.8380,region:"castle-rock"},
+  {name:"Sedona Hills",lat:39.3480,lng:-104.8450,region:"castle-rock"},
+  {name:"Red Rocks Ranch",lat:39.3420,lng:-104.8590,region:"castle-rock"},
+  {name:"Eagle Trace",lat:39.3360,lng:-104.8520,region:"castle-rock"},
+  {name:"Summer Oaks",lat:39.3400,lng:-104.8460,region:"castle-rock"},
+  {name:"Mesa View",lat:39.3540,lng:-104.8300,region:"castle-rock"},
+  {name:"Centennial Ranch",lat:39.3630,lng:-104.8270,region:"castle-rock"},
+  {name:"Windmill Creek",lat:39.3500,lng:-104.8240,region:"castle-rock"},
+  {name:"Sage Meadows",lat:39.3590,lng:-104.8200,region:"castle-rock"},
+  {name:"Elk Ridge",lat:39.3470,lng:-104.8310,region:"castle-rock"},
+  {name:"Prairie View",lat:39.3410,lng:-104.8370,region:"castle-rock"},
+  {name:"Wildwood",lat:39.3340,lng:-104.8450,region:"castle-rock"},
+  {name:"Settler's Park",lat:39.3280,lng:-104.8530,region:"castle-rock"},
+  {name:"Fox Hills",lat:39.3220,lng:-104.8480,region:"castle-rock"},
+  {name:"Mountain View",lat:39.3160,lng:-104.8410,region:"castle-rock"},
+  {name:"Peaceful Valley",lat:39.3100,lng:-104.8340,region:"south"},
+  {name:"Sunridge",lat:39.3040,lng:-104.8280,region:"south"},
+  {name:"Boulder Ridge",lat:39.2980,lng:-104.8220,region:"south"},
+  {name:"Aspen Grove",lat:39.2920,lng:-104.8160,region:"south"},
+  {name:"Pine Creek",lat:39.2860,lng:-104.8100,region:"south"},
+  {name:"Valley Forge",lat:39.2800,lng:-104.8040,region:"south"},
+  {name:"Golden Meadows",lat:39.2740,lng:-104.7980,region:"south"},
+  {name:"Silver Springs",lat:39.2680,lng:-104.7920,region:"south"},
+  {name:"Hidden Valley",lat:39.2620,lng:-104.7860,region:"south"},
+  {name:"Deer Creek",lat:39.2560,lng:-104.7800,region:"south"},
+  {name:"Thunder Ridge",lat:39.2500,lng:-104.7740,region:"south"},
+  {name:"Rock Creek",lat:39.2440,lng:-104.7680,region:"south"},
+  {name:"Pinyon",lat:39.2380,lng:-104.7620,region:"south"},
+  {name:"Cedar Hills",lat:39.2320,lng:-104.7560,region:"south"},
+  {name:"Juniper Ridge",lat:39.2260,lng:-104.7500,region:"south"},
+  {name:"Spruce Mountain",lat:39.2200,lng:-104.7440,region:"south"},
+  {name:"Willow Creek",lat:39.2140,lng:-104.7380,region:"south"},
+  {name:"Cottonwood",lat:39.2080,lng:-104.7320,region:"south"},
+  {name:"Bear Creek Village",lat:39.2367,lng:-104.9121,region:"south"},
+  {name:"Park Meadows",lat:39.5622,lng:-104.8764,region:"north"},
+  {name:"Highlands Ranch",lat:39.5539,lng:-104.9694,region:"west"},
+  {name:"Lone Tree",lat:39.5347,lng:-104.8869,region:"north"},
+  {name:"Parker",lat:39.5186,lng:-104.7614,region:"north"},
+  {name:"Larkspur",lat:39.2247,lng:-104.8897,region:"south"},
+  {name:"Monument",lat:39.0917,lng:-104.8728,region:"south"},
+  {name:"Elizabeth",lat:39.3597,lng:-104.5975,region:"east"},
+  {name:"Franktown",lat:39.3697,lng:-104.7506,region:"east"},
+  {name:"Sedalia",lat:39.4353,lng:-104.9761,region:"west"},
+  {name:"Louviers",lat:39.4794,lng:-105.0044,region:"west"},
+  {name:"Roxborough",lat:39.4394,lng:-105.0658,region:"west"},
+  {name:"Ken Caryl",lat:39.5761,lng:-105.1103,region:"west"},
+  {name:"Littleton",lat:39.6133,lng:-105.0167,region:"west"},
+  {name:"Centennial",lat:39.5794,lng:-104.8769,region:"north"},
+  {name:"Greenwood Village",lat:39.6170,lng:-104.9508,region:"north"},
+  {name:"Cherry Hills Village",lat:39.6428,lng:-104.9586,region:"north"},
+  {name:"Englewood",lat:39.6478,lng:-104.9878,region:"west"},
+  {name:"Sheridan",lat:39.6464,lng:-105.0253,region:"west"},
+  {name:"Aurora",lat:39.7294,lng:-104.8319,region:"north"},
+  {name:"Denver",lat:39.7392,lng:-104.9903,region:"west"},
+  {name:"Arvada",lat:39.8028,lng:-105.0875,region:"west"},
+  {name:"Westminster",lat:39.8367,lng:-105.0372,region:"west"},
+  {name:"Broomfield",lat:39.9205,lng:-105.0867,region:"west"},
+  {name:"Thornton",lat:39.8681,lng:-104.9719,region:"west"},
+  {name:"Northglenn",lat:39.8961,lng:-104.9872,region:"west"},
+  {name:"Commerce City",lat:39.8083,lng:-104.9339,region:"west"},
+  {name:"Lakewood",lat:39.7047,lng:-105.0814,region:"west"},
+  {name:"Golden",lat:39.7555,lng:-105.2211,region:"west"},
+  {name:"Morrison",lat:39.6536,lng:-105.1919,region:"west"},
+  {name:"Evergreen",lat:39.6333,lng:-105.3172,region:"west"},
+  {name:"Conifer",lat:39.5197,lng:-105.3083,region:"west"},
+  {name:"Bailey",lat:39.4044,lng:-105.4764,region:"west"},
+  {name:"Pine",lat:39.4533,lng:-105.3297,region:"west"},
+  {name:"Indian Hills",lat:39.6169,lng:-105.2339,region:"west"},
+  {name:"Genesee",lat:39.7019,lng:-105.2828,region:"west"},
+  {name:"Kittredge",lat:39.6594,lng:-105.2981,region:"west"},
+  {name:"Aspen Park",lat:39.5472,lng:-105.2931,region:"west"},
+  {name:"Elk Creek",lat:39.4681,lng:-105.4139,region:"west"},
+  {name:"Buffalo Creek",lat:39.4189,lng:-105.2356,region:"south"},
+  {name:"Deckers",lat:39.2364,lng:-105.1731,region:"south"},
+  {name:"Pine Grove",lat:39.2614,lng:-105.0956,region:"south"},
+  {name:"Perry Park",lat:39.2728,lng:-104.9408,region:"south"},
+  {name:"Spruce Mountain Ranch",lat:39.2894,lng:-104.9742,region:"south"},
+  {name:"Roxborough Park",lat:39.4511,lng:-105.0869,region:"west"},
+  {name:"Waterton Canyon",lat:39.4903,lng:-105.0819,region:"west"},
+  {name:"Chatfield State Park",lat:39.5308,lng:-105.0697,region:"west"},
+  {name:"Deer Creek Canyon",lat:39.5797,lng:-105.1628,region:"west"},
+  {name:"Red Rocks Park",lat:39.6653,lng:-105.2058,region:"west"},
+  {name:"Matthews/Winters",lat:39.6886,lng:-105.1903,region:"west"},
+  {name:"Mount Falcon",lat:39.6464,lng:-105.2203,region:"west"},
+  {name:"Lair o' the Bear",lat:39.6667,lng:-105.2656,region:"west"},
+  {name:"Staunton State Park",lat:39.4858,lng:-105.4133,region:"west"},
+  {name:"Meyer Ranch",lat:39.5717,lng:-105.2914,region:"west"},
+  {name:"Reynolds Park",lat:39.4661,lng:-105.3258,region:"west"},
+  {name:"Flying J Ranch",lat:39.3933,lng:-105.4311,region:"west"},
+  {name:"Wellington Lake",lat:39.3539,lng:-105.3531,region:"west"},
+  {name:"Meridian",lat:39.5258,lng:-104.7728,region:"north"},
+  {name:"Southridge",lat:39.5078,lng:-104.8911,region:"north"},
+  {name:"The Pinery",lat:39.4678,lng:-104.7931,region:"north"},
+  {name:"Tall Bull",lat:39.4367,lng:-104.7556,region:"north"},
+  {name:"Stonegate Village",lat:39.4967,lng:-104.8397,region:"north"},
+  {name:"Canterberry Crossing",lat:39.5086,lng:-104.8614,region:"north"},
+  {name:"Dove Valley",lat:39.5553,lng:-104.8122,region:"north"},
+  {name:"Meridian International Business Center",lat:39.5344,lng:-104.7631,region:"north"},
+  {name:"Sky Ridge",lat:39.5700,lng:-104.8647,region:"north"},
+  {name:"Backcountry",lat:39.5467,lng:-104.8003,region:"north"},
+  {name:"Blackstone",lat:39.5639,lng:-104.8281,region:"north"},
+  {name:"The Preserve",lat:39.5131,lng:-104.8186,region:"north"},
+  {name:"Saddle Rock",lat:39.5475,lng:-104.7822,region:"north"},
+  {name:"Stroh Ranch",lat:39.5258,lng:-104.7961,region:"north"},
+  {name:"Somerset",lat:39.5297,lng:-104.8431,region:"north"},
+  {name:"Southshore",lat:39.5739,lng:-104.8508,region:"north"},
+  {name:"Willow Springs",lat:39.5594,lng:-104.8394,region:"north"},
+  {name:"Lincoln Park",lat:39.5825,lng:-104.8422,region:"north"},
+  {name:"Vista Ridge",lat:39.5411,lng:-104.7878,region:"north"},
+  {name:"Saddleback",lat:39.4681,lng:-104.8064,region:"north"},
+  {name:"Bayou Gulch",lat:39.4975,lng:-104.7703,region:"north"},
+  {name:"Newlin Gulch",lat:39.4703,lng:-104.7800,region:"north"},
+  {name:"Pine Bluffs",lat:39.4561,lng:-104.7692,region:"north"},
+  {name:"Pinery Country Club",lat:39.4592,lng:-104.7867,region:"north"},
+  {name:"Singing Hills",lat:39.5689,lng:-104.8753,region:"north"},
+  {name:"Mariana Butte",lat:39.5417,lng:-104.7686,region:"north"},
+  {name:"Carriage Club",lat:39.5508,lng:-104.8192,region:"north"},
+  {name:"Pine Lane",lat:39.5142,lng:-104.7825,region:"north"},
+  {name:"Ridge at Hiwan",lat:39.6547,lng:-105.3036,region:"west"},
+  {name:"Columbine",lat:39.5872,lng:-105.0697,region:"west"},
+  {name:"Foothills",lat:39.6483,lng:-105.1556,region:"west"},
+  {name:"Bear Valley",lat:39.6533,lng:-105.0603,region:"west"},
+  {name:"Southwest Plaza",lat:39.6422,lng:-105.1103,region:"west"},
+  {name:"Belmar",lat:39.6669,lng:-105.0817,region:"west"},
+  {name:"Villa Italia",lat:39.6686,lng:-105.0744,region:"west"},
+  {name:"Green Mountain",lat:39.6728,lng:-105.1131,region:"west"},
+  {name:"Applewood",lat:39.7503,lng:-105.1639,region:"west"},
+  {name:"Mountain View",lat:39.7147,lng:-105.1575,region:"west"},
+  {name:"Glennon Heights",lat:39.7356,lng:-105.1453,region:"west"},
+  {name:"Alameda",lat:39.7133,lng:-105.1172,region:"west"},
+  {name:"Bear Creek Lake Park",lat:39.6414,lng:-105.1444,region:"west"},
+  {name:"Crown Hill",lat:39.7611,lng:-105.0589,region:"west"},
+  {name:"Sloan Lake",lat:39.7458,lng:-105.0486,region:"west"},
+  {name:"Highlands",lat:39.7639,lng:-105.0106,region:"west"},
+  {name:"West Colfax",lat:39.7406,lng:-105.0503,region:"west"},
+  {name:"Barnum",lat:39.7211,lng:-105.0411,region:"west"},
+  {name:"Berkeley",lat:39.7889,lng:-105.0281,region:"west"},
+  {name:"Sunnyside",lat:39.7750,lng:-105.0122,region:"west"},
+  {name:"Regis",lat:39.7931,lng:-105.0533,region:"west"},
+  {name:"Willis Case",lat:39.7983,lng:-105.0406,region:"west"},
+  {name:"Chaffee Park",lat:39.7842,lng:-105.0189,region:"west"},
+  {name:"Jefferson Park",lat:39.7628,lng:-105.0050,region:"west"},
+  {name:"Highland Park",lat:39.7372,lng:-104.9872,region:"west"},
+  {name:"Baker",lat:39.7178,lng:-104.9800,region:"west"},
+  {name:"Platte Park",lat:39.6933,lng:-104.9811,region:"west"},
+  {name:"Athmar Park",lat:39.7053,lng:-105.0106,region:"west"},
+  {name:"Harvey Park",lat:39.6783,lng:-105.0506,region:"west"},
+  {name:"Fort Logan",lat:39.6561,lng:-105.0381,region:"west"},
+  {name:"Marston",lat:39.6697,lng:-105.0233,region:"west"},
+  {name:"College View",lat:39.6467,lng:-105.0108,region:"west"},
+  {name:"University",lat:39.6669,lng:-104.9639,region:"west"},
+  {name:"University Hills",lat:39.6503,lng:-104.9561,region:"north"},
+  {name:"Wellshire",lat:39.6394,lng:-104.9431,region:"north"},
+  {name:"Hampden",lat:39.6508,lng:-104.9200,region:"north"},
+  {name:"Southmoor Park",lat:39.6336,lng:-104.9064,region:"north"},
+  {name:"Hampden South",lat:39.6422,lng:-104.8972,region:"north"},
+  {name:"Virginia Village",lat:39.6681,lng:-104.9006,region:"north"},
+  {name:"Kennedy",lat:39.6944,lng:-104.8956,region:"north"},
+  {name:"Indian Creek",lat:39.7058,lng:-104.8600,region:"north"},
+  {name:"Heather Gardens",lat:39.7244,lng:-104.8469,region:"north"},
+  {name:"East Colfax",lat:39.7406,lng:-104.8856,region:"north"},
+  {name:"Montclair",lat:39.7450,lng:-104.9197,region:"north"},
+  {name:"Mayfair",lat:39.7578,lng:-104.9064,region:"north"},
+  {name:"Skyland",lat:39.7383,lng:-104.9378,region:"north"}
+];
 
 // ============== INITIALIZATION ==============
 window.addEventListener('load', async () => {
@@ -559,7 +879,9 @@ window.addEventListener('load', async () => {
   await loadCustomerData();
   loadGroomersFromStorage();
   renderCustomers();
+  renderNeighborhoods();
   renderGroomers();
+  updateActiveGroomerSelect();
   
   // Color picker interaction
   document.querySelectorAll('.color-option').forEach(opt => {
@@ -570,6 +892,31 @@ window.addEventListener('load', async () => {
     });
   });
 });
+
+// ============== TAB MANAGEMENT ==============
+function switchTab(tabName) {
+  currentTab = tabName;
+  
+  // Update tab buttons
+  document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+  event.target.classList.add('active');
+  
+  // Update tab content
+  document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+  document.getElementById(`${tabName}Tab`).classList.add('active');
+}
+
+// ============== ACTIVE GROOMER MANAGEMENT ==============
+function updateActiveGroomerSelect() {
+  const select = document.getElementById('activeGroomerSelect');
+  select.innerHTML = '<option value="">Select groomer to assign...</option>' +
+    groomers.map(g => `<option value="${g.id}" ${g.id === activeGroomerId ? 'selected' : ''}>${g.name}</option>`).join('');
+}
+
+function updateActiveGroomer() {
+  const select = document.getElementById('activeGroomerSelect');
+  activeGroomerId = select.value ? parseInt(select.value) : null;
+}
 
 // ============== DATA LOADING ==============
 async function loadCustomerData() {
@@ -737,6 +1084,7 @@ function addGroomer() {
   groomers.push(newGroomer);
   saveGroomersToStorage();
   renderGroomers();
+  updateActiveGroomerSelect();
   closeAddGroomerModal();
 }
 
@@ -753,9 +1101,17 @@ function deleteGroomer(groomerId) {
   }
   
   groomers = groomers.filter(g => g.id !== groomerId);
+  
+  // Reset active groomer if it was deleted
+  if (activeGroomerId === groomerId) {
+    activeGroomerId = null;
+  }
+  
   saveGroomersToStorage();
   renderGroomers();
   renderCustomers();
+  renderNeighborhoods();
+  updateActiveGroomerSelect();
   updateMapRoutes();
 }
 
@@ -779,7 +1135,7 @@ function renderCustomers() {
   );
   
   container.innerHTML = filtered.map(customer => `
-    <div class="customer-item" draggable="true" data-customer-id="${customer.id}">
+    <div class="customer-item" draggable="true" data-customer-id="${customer.id}" onclick="assignCustomerToActiveGroomer('${customer.id}')">
       <div>
         <div class="customer-name">${customer.name}</div>
         <div class="customer-neighborhood">${customer.neighborhood}</div>
@@ -798,6 +1154,193 @@ function renderCustomers() {
 
 function filterCustomers() {
   renderCustomers();
+}
+
+// ============== NEIGHBORHOOD RENDERING ==============
+function renderNeighborhoods() {
+  const container = document.getElementById('neighborhoodList');
+  const searchTerm = (document.getElementById('neighborhoodSearchBox')?.value || '').toLowerCase();
+  
+  // Calculate customer count per neighborhood
+  const neighborhoodCounts = {};
+  CUSTOMERS.forEach(customer => {
+    const nhood = customer.neighborhood;
+    if (nhood) {
+      neighborhoodCounts[nhood] = (neighborhoodCounts[nhood] || 0) + 1;
+    }
+  });
+  
+  const filtered = NEIGHBORHOODS.filter(n => 
+    n.name.toLowerCase().includes(searchTerm)
+  );
+  
+  container.innerHTML = filtered.map(neighborhood => {
+    const count = neighborhoodCounts[neighborhood.name] || 0;
+    return `
+      <div class="customer-item" onclick="assignNeighborhoodToActiveGroomer('${neighborhood.name.replace(/'/g, "\\'")}')">
+        <div>
+          <div class="customer-name">${neighborhood.name}</div>
+          <div class="customer-neighborhood">${neighborhood.region.toUpperCase()} • ${count} customer${count !== 1 ? 's' : ''}</div>
+        </div>
+        <div style="background: #e3f2fd; color: #1565c0; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">${count}</div>
+      </div>
+    `;
+  }).join('');
+  
+  document.getElementById('neighborhoodCountDisplay').textContent = filtered.length;
+}
+
+function filterNeighborhoods() {
+  renderNeighborhoods();
+}
+
+// ============== ADDRESS LOOKUP ==============
+async function lookupAddress() {
+  const address = document.getElementById('addressInput').value.trim();
+  const resultDiv = document.getElementById('addressResult');
+  
+  if (!address) {
+    resultDiv.innerHTML = '<div style="color: #999; font-size: 12px; padding: 10px; text-align: center;">Enter an address to search</div>';
+    return;
+  }
+  
+  resultDiv.innerHTML = '<div style="color: #999; font-size: 12px; padding: 10px; text-align: center;">🔍 Looking up address...</div>';
+  
+  try {
+    const response = await fetch(
+      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address + ', Colorado')}&key=${GOOGLE_API_KEY}`
+    );
+    const data = await response.json();
+    
+    if (data.status !== 'OK' || !data.results.length) {
+      resultDiv.innerHTML = '<div style="color: #d32f2f; font-size: 12px; padding: 10px;">Address not found</div>';
+      return;
+    }
+    
+    const result = data.results[0];
+    const lat = result.geometry.location.lat;
+    const lng = result.geometry.location.lng;
+    const formattedAddress = result.formatted_address;
+    
+    // Find nearest neighborhood
+    let nearestNeighborhood = NEIGHBORHOODS[0];
+    let minDist = Infinity;
+    NEIGHBORHOODS.forEach(nhood => {
+      const dist = calculateDistance(lat, lng, nhood.lat, nhood.lng);
+      if (dist < minDist) {
+        minDist = dist;
+        nearestNeighborhood = nhood;
+      }
+    });
+    
+    // Distance from HQ
+    const distFromHQ = calculateDistance(lat, lng, HQ[0], HQ[1]);
+    const driveTime = (distFromHQ / 30 * 60).toFixed(0); // minutes at 30mph
+    
+    resultDiv.innerHTML = `
+      <div style="border: 2px solid #e0e0e0; border-radius: 8px; padding: 12px; margin-top: 10px;">
+        <div style="font-size: 13px; font-weight: 600; margin-bottom: 8px;">${formattedAddress}</div>
+        <div style="font-size: 12px; color: #666; margin-bottom: 6px;">
+          📍 Neighborhood: <strong>${nearestNeighborhood.name}</strong> (${minDist.toFixed(1)} mi away)
+        </div>
+        <div style="font-size: 12px; color: #666; margin-bottom: 12px;">
+          🏢 From HQ: ${distFromHQ.toFixed(1)} mi • ~${driveTime} min drive
+        </div>
+        <button class="btn btn-primary" onclick="assignAddressToActiveGroomer('${formattedAddress.replace(/'/g, "\\'")}', ${lat}, ${lng}, '${nearestNeighborhood.name.replace(/'/g, "\\'")}')">
+          Assign to Active Groomer
+        </button>
+      </div>
+    `;
+    
+    // Show on map
+    if (window.addressMarker) {
+      map.removeLayer(window.addressMarker);
+    }
+    window.addressMarker = L.marker([lat, lng], {
+      icon: L.divIcon({
+        className: 'address-marker',
+        html: '<div style="background: #E53935; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">📍</div>',
+        iconSize: [30, 30],
+        iconAnchor: [15, 15]
+      })
+    }).addTo(map);
+    
+    map.setView([lat, lng], 14);
+    
+  } catch (error) {
+    console.error('Geocoding error:', error);
+    resultDiv.innerHTML = '<div style="color: #d32f2f; font-size: 12px; padding: 10px;">Error looking up address</div>';
+  }
+}
+
+// ============== CLICK-TO-ASSIGN FUNCTIONS ==============
+function assignCustomerToActiveGroomer(customerId) {
+  if (!activeGroomerId) {
+    alert('Please select an active groomer first (dropdown at top)');
+    return;
+  }
+  
+  assignCustomerToGroomer(customerId, activeGroomerId);
+}
+
+function assignNeighborhoodToActiveGroomer(neighborhoodName) {
+  if (!activeGroomerId) {
+    alert('Please select an active groomer first (dropdown at top)');
+    return;
+  }
+  
+  // Find all unassigned customers in this neighborhood
+  const customersInNeighborhood = CUSTOMERS.filter(c => 
+    c.neighborhood === neighborhoodName && !c.assignedTo
+  );
+  
+  if (customersInNeighborhood.length === 0) {
+    alert(`No unassigned customers in ${neighborhoodName}`);
+    return;
+  }
+  
+  // Assign all to active groomer
+  customersInNeighborhood.forEach(customer => {
+    assignCustomerToGroomer(customer.id, activeGroomerId);
+  });
+  
+  alert(`Assigned ${customersInNeighborhood.length} customer(s) from ${neighborhoodName} to ${groomers.find(g => g.id === activeGroomerId).name}`);
+}
+
+function assignAddressToActiveGroomer(address, lat, lng, neighborhood) {
+  if (!activeGroomerId) {
+    alert('Please select an active groomer first (dropdown at top)');
+    return;
+  }
+  
+  const groomer = groomers.find(g => g.id === activeGroomerId);
+  if (!groomer) return;
+  
+  // Create a temporary customer object for the address
+  const addressId = 'addr_' + Date.now();
+  CUSTOMERS.push({
+    id: addressId,
+    name: address,
+    lat: lat,
+    lng: lng,
+    neighborhood: neighborhood,
+    type: 'ADDR',
+    address: address,
+    assignedTo: activeGroomerId
+  });
+  
+  groomer.route.push(addressId);
+  
+  saveGroomersToStorage();
+  renderCustomers();
+  renderGroomers();
+  updateMapRoutes();
+  
+  alert(`Added "${address}" to ${groomer.name}'s route`);
+  
+  // Clear address input
+  document.getElementById('addressInput').value = '';
+  document.getElementById('addressResult').innerHTML = '';
 }
 
 // ============== GROOMER RENDERING ==============
@@ -964,6 +1507,7 @@ function clearGroomerRoute(groomerId) {
     
     saveGroomersToStorage();
     renderCustomers();
+    renderNeighborhoods();
     renderGroomers();
     updateMapRoutes();
   }
