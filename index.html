@@ -370,9 +370,21 @@ input[type="text"]:focus {
     <div class="info-text" id="customerCount">Loading customers...</div>
   </div>
 
-  <!-- Route Stops -->
+  <!-- Multi-Groomer Route Planner -->
   <div class="section">
-    <div class="section-title">🚐 Today's Route</div>
+    <div class="section-title">🚐 Route Planner</div>
+    
+    <!-- Groomer Selection -->
+    <div style="margin-bottom: 15px;">
+      <label style="font-size: 12px; color: #666; display: block; margin-bottom: 5px;">Select Groomer:</label>
+      <select id="groomerSelect" onchange="switchGroomer()" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+        <option value="groomer1">Groomer 1</option>
+        <option value="groomer2">Groomer 2</option>
+        <option value="groomer3">Groomer 3</option>
+      </select>
+    </div>
+    
+    <!-- Current Groomer Stats -->
     <div class="stats">
       <div class="stat-box">
         <div class="stat-value" id="stopCount">0</div>
@@ -382,9 +394,26 @@ input[type="text"]:focus {
         <div class="stat-value" id="totalMiles">0</div>
         <div class="stat-label">Miles</div>
       </div>
+      <div class="stat-box">
+        <div class="stat-value" id="driveTime">0</div>
+        <div class="stat-label">Hours</div>
+      </div>
     </div>
-    <div id="routeStops"></div>
-    <button class="btn btn-small" onclick="clearRoute()" id="clearRouteBtn" style="display: none; margin-top: 10px;">Clear Route</button>
+    
+    <!-- Route Stops for Current Groomer -->
+    <div id="routeStops" style="margin-top: 15px;"></div>
+    
+    <!-- Route Actions -->
+    <div class="btn-group" style="margin-top: 10px;">
+      <button class="btn btn-small" onclick="optimizeRoute()" id="optimizeBtn" style="display: none;">📍 Optimize</button>
+      <button class="btn btn-small" onclick="clearRoute()" id="clearRouteBtn" style="display: none;">Clear</button>
+    </div>
+    
+    <!-- All Groomers Summary -->
+    <div id="allGroomersSummary" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #eee;"></div>
+    
+    <!-- Export Routes -->
+    <button class="btn" onclick="exportRoutes()" style="width: 100%; margin-top: 10px;">📤 Export All Routes</button>
   </div>
 
   <!-- Neighborhoods -->
@@ -704,8 +733,22 @@ const NEIGHBORHOODS = [
 // ============== GLOBAL STATE ==============
 let map;
 let customerMarkers = [];
-let routeStops = [];
 let currentCustomerFilter = 'ALL';
+
+// Multi-Groomer Route Management
+let groomerRoutes = {
+  groomer1: [],
+  groomer2: [],
+  groomer3: []
+};
+let currentGroomer = 'groomer1';
+
+// Groomer names (can be customized)
+let groomerNames = {
+  groomer1: 'Groomer 1',
+  groomer2: 'Groomer 2',
+  groomer3: 'Groomer 3'
+};
 
 // ============== UTILITY FUNCTIONS ==============
 function calculateDistance(lat1, lng1, lat2, lng2) {
@@ -957,42 +1000,96 @@ function zoomToCustomer(lat, lng, name) {
 }
 
 // ============== ROUTE MANAGEMENT ==============
-function addToRoute(name, lat, lng) {
-  routeStops.push({ name, lat, lng });
+// ============== MULTI-GROOMER ROUTE MANAGEMENT ==============
+function switchGroomer() {
+  currentGroomer = document.getElementById('groomerSelect').value;
   updateRouteDisplay();
+}
+
+function addToRoute(name, lat, lng) {
+  groomerRoutes[currentGroomer].push({ name, lat, lng });
+  updateRouteDisplay();
+  updateAllGroomersSummary();
 }
 
 function removeFromRoute(index) {
-  routeStops.splice(index, 1);
+  groomerRoutes[currentGroomer].splice(index, 1);
   updateRouteDisplay();
+  updateAllGroomersSummary();
 }
 
 function clearRoute() {
-  routeStops = [];
+  if (confirm(`Clear all stops for ${groomerNames[currentGroomer]}?`)) {
+    groomerRoutes[currentGroomer] = [];
+    updateRouteDisplay();
+    updateAllGroomersSummary();
+  }
+}
+
+function optimizeRoute() {
+  const stops = groomerRoutes[currentGroomer];
+  if (stops.length < 2) return;
+  
+  // Simple nearest-neighbor optimization starting from HQ
+  const optimized = [];
+  let current = { lat: HQ[0], lng: HQ[1] };
+  const remaining = [...stops];
+  
+  while (remaining.length > 0) {
+    let nearestIdx = 0;
+    let nearestDist = Infinity;
+    
+    remaining.forEach((stop, idx) => {
+      const dist = calculateDistance(current.lat, current.lng, stop.lat, stop.lng);
+      if (dist < nearestDist) {
+        nearestDist = dist;
+        nearestIdx = idx;
+      }
+    });
+    
+    const nearest = remaining.splice(nearestIdx, 1)[0];
+    optimized.push(nearest);
+    current = nearest;
+  }
+  
+  groomerRoutes[currentGroomer] = optimized;
   updateRouteDisplay();
 }
 
 function updateRouteDisplay() {
   const container = document.getElementById('routeStops');
   const clearBtn = document.getElementById('clearRouteBtn');
+  const optimizeBtn = document.getElementById('optimizeBtn');
+  const stops = groomerRoutes[currentGroomer];
   
-  if (routeStops.length === 0) {
-    container.innerHTML = '<div class="empty-state">No stops added</div>';
+  if (stops.length === 0) {
+    container.innerHTML = '<div class="empty-state">Click neighborhoods to add stops</div>';
     clearBtn.style.display = 'none';
+    optimizeBtn.style.display = 'none';
     document.getElementById('stopCount').textContent = '0';
     document.getElementById('totalMiles').textContent = '0';
+    document.getElementById('driveTime').textContent = '0';
     return;
   }
   
   // Calculate total distance
   let totalMiles = 0;
-  for (let i = 0; i < routeStops.length; i++) {
-    const from = i === 0 ? HQ : [routeStops[i-1].lat, routeStops[i-1].lng];
-    const to = [routeStops[i].lat, routeStops[i].lng];
+  for (let i = 0; i < stops.length; i++) {
+    const from = i === 0 ? [HQ[0], HQ[1]] : [stops[i-1].lat, stops[i-1].lng];
+    const to = [stops[i].lat, stops[i].lng];
     totalMiles += calculateDistance(from[0], from[1], to[0], to[1]);
   }
   
-  container.innerHTML = routeStops.map((stop, i) => `
+  // Add return to HQ
+  if (stops.length > 0) {
+    const lastStop = stops[stops.length - 1];
+    totalMiles += calculateDistance(lastStop.lat, lastStop.lng, HQ[0], HQ[1]);
+  }
+  
+  // Estimate drive time (assuming 30 mph average with stops)
+  const driveTime = (totalMiles / 30) + (stops.length * 0.5); // 30 min per stop
+  
+  container.innerHTML = stops.map((stop, i) => `
     <div class="route-stop">
       <div>
         <strong>${i + 1}.</strong> ${stop.name}
@@ -1001,9 +1098,105 @@ function updateRouteDisplay() {
     </div>
   `).join('');
   
-  clearBtn.style.display = 'block';
-  document.getElementById('stopCount').textContent = routeStops.length;
+  clearBtn.style.display = 'inline-block';
+  optimizeBtn.style.display = stops.length > 1 ? 'inline-block' : 'none';
+  document.getElementById('stopCount').textContent = stops.length;
   document.getElementById('totalMiles').textContent = totalMiles.toFixed(1);
+  document.getElementById('driveTime').textContent = driveTime.toFixed(1);
+}
+
+function updateAllGroomersSummary() {
+  const container = document.getElementById('allGroomersSummary');
+  
+  let totalStops = 0;
+  let totalMiles = 0;
+  let summaryHTML = '<div style="font-size: 12px; color: #666; margin-bottom: 8px;">All Groomers:</div>';
+  
+  Object.keys(groomerRoutes).forEach(groomer => {
+    const stops = groomerRoutes[groomer];
+    if (stops.length === 0) return;
+    
+    let miles = 0;
+    for (let i = 0; i < stops.length; i++) {
+      const from = i === 0 ? [HQ[0], HQ[1]] : [stops[i-1].lat, stops[i-1].lng];
+      const to = [stops[i].lat, stops[i].lng];
+      miles += calculateDistance(from[0], from[1], to[0], to[1]);
+    }
+    // Add return to HQ
+    if (stops.length > 0) {
+      const lastStop = stops[stops.length - 1];
+      miles += calculateDistance(lastStop.lat, lastStop.lng, HQ[0], HQ[1]);
+    }
+    
+    totalStops += stops.length;
+    totalMiles += miles;
+    
+    const color = groomer === currentGroomer ? '#FFA000' : '#666';
+    summaryHTML += `
+      <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f5f5f5;">
+        <span style="font-size: 13px; font-weight: ${groomer === currentGroomer ? 'bold' : 'normal'}; color: ${color};">
+          ${groomerNames[groomer]}
+        </span>
+        <span style="font-size: 12px; color: #666;">
+          ${stops.length} stops, ${miles.toFixed(1)} mi
+        </span>
+      </div>
+    `;
+  });
+  
+  if (totalStops === 0) {
+    container.innerHTML = '';
+    return;
+  }
+  
+  summaryHTML += `
+    <div style="margin-top: 10px; padding: 10px; background: #f5f5f5; border-radius: 4px; font-size: 13px;">
+      <strong>Total:</strong> ${totalStops} stops, ${totalMiles.toFixed(1)} miles
+    </div>
+  `;
+  
+  container.innerHTML = summaryHTML;
+}
+
+function exportRoutes() {
+  let exportText = `Woofies Route Plan - ${new Date().toLocaleDateString()}\n\n`;
+  
+  Object.keys(groomerRoutes).forEach(groomer => {
+    const stops = groomerRoutes[groomer];
+    if (stops.length === 0) return;
+    
+    exportText += `${groomerNames[groomer]}:\n`;
+    exportText += `Starting from HQ (201 S Wilcox St, Castle Rock, CO 80104)\n\n`;
+    
+    stops.forEach((stop, i) => {
+      exportText += `${i + 1}. ${stop.name}\n`;
+    });
+    
+    exportText += `\nReturn to HQ\n`;
+    
+    // Calculate stats
+    let miles = 0;
+    for (let i = 0; i < stops.length; i++) {
+      const from = i === 0 ? [HQ[0], HQ[1]] : [stops[i-1].lat, stops[i-1].lng];
+      const to = [stops[i].lat, stops[i].lng];
+      miles += calculateDistance(from[0], from[1], to[0], to[1]);
+    }
+    if (stops.length > 0) {
+      const lastStop = stops[stops.length - 1];
+      miles += calculateDistance(lastStop.lat, lastStop.lng, HQ[0], HQ[1]);
+    }
+    
+    exportText += `\nTotal: ${stops.length} stops, ${miles.toFixed(1)} miles\n\n`;
+    exportText += '-------------------\n\n';
+  });
+  
+  // Copy to clipboard
+  navigator.clipboard.writeText(exportText).then(() => {
+    alert('Routes copied to clipboard!');
+  }).catch(() => {
+    // Fallback: show in alert
+    alert(exportText);
+  });
 }
 
 // ============== NEIGHBORHOOD FILTERING ==============
