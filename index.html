@@ -225,6 +225,11 @@ body {
   overflow: hidden;
 }
 
+.groomer-card.has-warnings {
+  border-color: #ff9800;
+  box-shadow: 0 0 0 1px #ffe0b2;
+}
+
 .groomer-header {
   padding: 12px;
   background: #f5f5f5;
@@ -1371,8 +1376,14 @@ function renderGroomers() {
   container.innerHTML = groomers.map(groomer => {
     const stats = calculateGroomerStats(groomer);
     
+    // Business logic warnings
+    const warnings = [];
+    if (stats.hours > 8) warnings.push('⚠️ Over 8 hours');
+    if (stats.miles > 100) warnings.push('⚠️ Over 100 miles');
+    if (groomer.route.length > 8) warnings.push('⚠️ Over 8 stops');
+    
     return `
-      <div class="groomer-card">
+      <div class="groomer-card ${warnings.length > 0 ? 'has-warnings' : ''}">
         <div class="groomer-header" style="border-bottom-color: ${groomer.color};">
           <div class="groomer-name">
             <input type="text" value="${groomer.name}" 
@@ -1385,11 +1396,11 @@ function renderGroomers() {
               <div class="groomer-stat-label">Stops</div>
             </div>
             <div class="groomer-stat">
-              <div class="groomer-stat-value">${stats.miles.toFixed(1)}</div>
+              <div class="groomer-stat-value">${stats.miles}</div>
               <div class="groomer-stat-label">Miles</div>
             </div>
             <div class="groomer-stat">
-              <div class="groomer-stat-value">${stats.hours.toFixed(1)}</div>
+              <div class="groomer-stat-value">${stats.hours}</div>
               <div class="groomer-stat-label">Hours</div>
             </div>
           </div>
@@ -1399,11 +1410,21 @@ function renderGroomers() {
             <button class="groomer-action-btn" onclick="deleteGroomer(${groomer.id})" title="Delete">×</button>
           </div>
         </div>
+        ${warnings.length > 0 ? `
+          <div style="background: #fff3e0; padding: 8px 12px; font-size: 11px; color: #e65100; border-bottom: 1px solid #ffe0b2;">
+            ${warnings.join(' • ')}
+          </div>
+        ` : ''}
+        ${stats.driveTime > 0 ? `
+          <div style="padding: 8px 12px; background: #fafafa; font-size: 11px; color: #666; border-bottom: 1px solid #f0f0f0;">
+            🚗 Drive: ${stats.driveTime}h • 🐕 Service: ${stats.serviceTime}h
+          </div>
+        ` : ''}
         <div class="groomer-routes" id="groomer-${groomer.id}-routes" data-groomer-id="${groomer.id}">
           ${groomer.route.length === 0 ? 
             '<div class="empty-route">Drop customers here or click to assign</div>' :
             groomer.route.map((customerId, index) => {
-              const customer = CUSTOMERS.find(c => c.id === customerId);
+              const customer = CUSTOMERS.find(c => String(c.id) === String(customerId));
               return customer ? `
                 <div class="route-item" data-customer-id="${customerId}">
                   <div style="display: flex; align-items: center;">
@@ -1556,43 +1577,64 @@ function calculateGroomerStats(groomer) {
   let miles = 0;
   
   if (groomer.route.length === 0) {
-    return { miles: 0, hours: 0 };
+    return { miles: 0, hours: 0, driveTime: 0, serviceTime: 0 };
   }
   
-  // Distance from HQ to first stop
-  const firstCustomer = CUSTOMERS.find(c => String(c.id) === String(groomer.route[0]));
-  if (firstCustomer && firstCustomer.lat && firstCustomer.lng) {
-    const dist = calculateDistance(HQ[0], HQ[1], firstCustomer.lat, firstCustomer.lng);
-    if (isFinite(dist) && dist < 1000) { // Sanity check: should be < 1000 miles
+  // Build the complete route: HQ → Stop1 → Stop2 → ... → StopN → HQ
+  const routePoints = [{ lat: HQ[0], lng: HQ[1], name: 'HQ' }];
+  
+  groomer.route.forEach(customerId => {
+    const customer = CUSTOMERS.find(c => String(c.id) === String(customerId));
+    if (customer && customer.lat && customer.lng) {
+      routePoints.push({
+        lat: customer.lat,
+        lng: customer.lng,
+        name: customer.name,
+        type: customer.type
+      });
+    }
+  });
+  
+  // Add return to HQ
+  routePoints.push({ lat: HQ[0], lng: HQ[1], name: 'HQ' });
+  
+  // Calculate total distance as one continuous route
+  for (let i = 0; i < routePoints.length - 1; i++) {
+    const from = routePoints[i];
+    const to = routePoints[i + 1];
+    const dist = calculateDistance(from.lat, from.lng, to.lat, to.lng);
+    
+    // Sanity check
+    if (isFinite(dist) && dist < 200) { // No single leg should be > 200 miles
       miles += dist;
+    } else {
+      console.warn(`Suspicious distance: ${from.name} to ${to.name} = ${dist} miles`);
     }
   }
   
-  // Distance between stops
-  for (let i = 0; i < groomer.route.length - 1; i++) {
-    const from = CUSTOMERS.find(c => String(c.id) === String(groomer.route[i]));
-    const to = CUSTOMERS.find(c => String(c.id) === String(groomer.route[i + 1]));
-    if (from && to && from.lat && from.lng && to.lat && to.lng) {
-      const dist = calculateDistance(from.lat, from.lng, to.lat, to.lng);
-      if (isFinite(dist) && dist < 1000) { // Sanity check
-        miles += dist;
-      }
+  // Calculate time estimates
+  const driveTime = miles / 30; // Hours at 30 mph average
+  
+  // Service time: 45 min for MPS, 60 min for PSDW, 90 min for BOTH
+  let serviceTime = 0;
+  groomer.route.forEach(customerId => {
+    const customer = CUSTOMERS.find(c => String(c.id) === String(customerId));
+    if (customer) {
+      if (customer.type === 'MPS') serviceTime += 0.75; // 45 min
+      else if (customer.type === 'PSDW') serviceTime += 1.0; // 60 min
+      else if (customer.type === 'BOTH') serviceTime += 1.5; // 90 min
+      else serviceTime += 1.0; // Default 60 min
     }
-  }
+  });
   
-  // Distance back to HQ
-  const lastCustomer = CUSTOMERS.find(c => String(c.id) === String(groomer.route[groomer.route.length - 1]));
-  if (lastCustomer && lastCustomer.lat && lastCustomer.lng) {
-    const dist = calculateDistance(lastCustomer.lat, lastCustomer.lng, HQ[0], HQ[1]);
-    if (isFinite(dist) && dist < 1000) { // Sanity check
-      miles += dist;
-    }
-  }
+  const totalHours = driveTime + serviceTime;
   
-  // Estimate hours (30 mph avg + 30 min per stop)
-  const hours = (miles / 30) + (groomer.route.length * 0.5);
-  
-  return { miles, hours };
+  return { 
+    miles: Math.round(miles * 10) / 10, // Round to 1 decimal
+    hours: Math.round(totalHours * 10) / 10,
+    driveTime: Math.round(driveTime * 10) / 10,
+    serviceTime: Math.round(serviceTime * 10) / 10
+  };
 }
 
 function optimizeGroomerRoute(groomerId) {
@@ -1711,33 +1753,83 @@ function loadRoutes() {
 }
 
 function exportRoutes() {
-  let text = `Woofies Route Plan - ${new Date().toLocaleDateString()}\n`;
-  text += `Generated: ${new Date().toLocaleString()}\n\n`;
-  text += '='.repeat(60) + '\n\n';
+  let text = `WOOFIES ROUTE PLAN\n`;
+  text += `${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}\n`;
+  text += `Generated: ${new Date().toLocaleTimeString()}\n\n`;
+  text += `${'='.repeat(60)}\n\n`;
+  
+  let totalStops = 0;
+  let totalMiles = 0;
+  let totalHours = 0;
+  let warnings = [];
   
   groomers.forEach(groomer => {
     if (groomer.route.length === 0) return;
     
     const stats = calculateGroomerStats(groomer);
+    totalStops += groomer.route.length;
+    totalMiles += stats.miles;
+    totalHours += stats.hours;
+    
+    // Check for warnings
+    if (stats.hours > 8) warnings.push(`${groomer.name}: Over 8 hours (${stats.hours}h)`);
+    if (stats.miles > 100) warnings.push(`${groomer.name}: Over 100 miles (${stats.miles} mi)`);
+    if (groomer.route.length > 8) warnings.push(`${groomer.name}: Over 8 stops (${groomer.route.length})`);
     
     text += `${groomer.name.toUpperCase()}\n`;
-    text += `${'─'.repeat(groomer.name.length)}\n`;
-    text += `Route: ${groomer.route.length} stops | ${stats.miles.toFixed(1)} miles | ${stats.hours.toFixed(1)} hours\n\n`;
-    text += `Start: Woofies HQ (201 S Wilcox St, Castle Rock, CO 80104)\n\n`;
+    text += `${'─'.repeat(groomer.name.length)}\n\n`;
+    
+    text += `Route Summary:\n`;
+    text += `  • ${groomer.route.length} stops\n`;
+    text += `  • ${stats.miles} miles total\n`;
+    text += `  • ${stats.hours} hours total (${stats.driveTime}h drive + ${stats.serviceTime}h service)\n`;
+    text += `  • Avg ${(stats.miles / (groomer.route.length + 1)).toFixed(1)} mi between stops\n\n`;
+    
+    text += `Route:\n`;
+    text += `  START: Woofies HQ (201 S Wilcox St, Castle Rock, CO)\n\n`;
     
     groomer.route.forEach((customerId, index) => {
-      const customer = CUSTOMERS.find(c => c.id === customerId);
+      const customer = CUSTOMERS.find(c => String(c.id) === String(customerId));
       if (customer) {
-        text += `${index + 1}. ${customer.name}\n`;
-        text += `   ${customer.address}\n`;
-        text += `   ${customer.neighborhood}\n`;
-        text += `   Type: ${customer.type}\n\n`;
+        const serviceTime = customer.type === 'MPS' ? '45 min' : 
+                           customer.type === 'PSDW' ? '60 min' : 
+                           customer.type === 'BOTH' ? '90 min' : '60 min';
+        
+        text += `  ${index + 1}. ${customer.name}\n`;
+        text += `     ${customer.address}\n`;
+        text += `     ${customer.neighborhood}\n`;
+        text += `     Type: ${customer.type} (${serviceTime})\n\n`;
       }
     });
     
-    text += `Return to: Woofies HQ\n\n`;
-    text += '='.repeat(60) + '\n\n';
+    text += `  END: Return to Woofies HQ\n\n`;
+    text += `${'='.repeat(60)}\n\n`;
   });
+  
+  // Summary
+  text += `DAILY SUMMARY\n`;
+  text += `${'─'.repeat(13)}\n\n`;
+  text += `Total Stops: ${totalStops}\n`;
+  text += `Total Miles: ${totalMiles.toFixed(1)}\n`;
+  text += `Total Hours: ${totalHours.toFixed(1)}\n`;
+  text += `Groomers: ${groomers.filter(g => g.route.length > 0).length}\n`;
+  text += `Avg per Groomer: ${(totalStops / groomers.filter(g => g.route.length > 0).length).toFixed(1)} stops, `;
+  text += `${(totalMiles / groomers.filter(g => g.route.length > 0).length).toFixed(1)} miles, `;
+  text += `${(totalHours / groomers.filter(g => g.route.length > 0).length).toFixed(1)} hours\n\n`;
+  
+  if (warnings.length > 0) {
+    text += `⚠️  WARNINGS\n`;
+    text += `${'─'.repeat(11)}\n`;
+    warnings.forEach(w => text += `  • ${w}\n`);
+    text += `\n`;
+  }
+  
+  text += `${'='.repeat(60)}\n\n`;
+  text += `BUSINESS NOTES:\n`;
+  text += `• Routes are optimized from HQ → stops → HQ (one continuous trip)\n`;
+  text += `• Drive time estimated at 30 mph average\n`;
+  text += `• Service times: MPS=45min, PSDW=60min, BOTH=90min\n`;
+  text += `• Recommended max: 8 stops, 100 miles, 8 hours per groomer\n`;
   
   // Copy to clipboard
   navigator.clipboard.writeText(text).then(() => {
