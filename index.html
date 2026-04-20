@@ -969,20 +969,31 @@ async function loadCustomerData() {
 
 // ============== MAP ==============
 function initMap() {
-  map = L.map('map').setView(HQ, 12);
+  // Initialize map centered on Castle Rock, CO
+  map = L.map('map', {
+    center: [39.3673538, -104.8619428],
+    zoom: 12
+  });
+  
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap contributors'
   }).addTo(map);
   
-  // HQ marker
-  L.marker(HQ, {
+  // Force map to invalidate size and center after a short delay
+  setTimeout(() => {
+    map.invalidateSize();
+    map.setView([39.3673538, -104.8619428], 12);
+  }, 100);
+  
+  // HQ marker at Woofies HQ in Castle Rock, CO
+  L.marker([39.3673538, -104.8619428], {
     icon: L.divIcon({
       className: 'hq-marker',
       html: '<div style="background: #D46A00; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">HQ</div>',
       iconSize: [30, 30],
       iconAnchor: [15, 15]
     })
-  }).addTo(map).bindPopup('<strong>Woofies HQ</strong><br>201 S Wilcox St');
+  }).addTo(map).bindPopup('<strong>Woofies HQ</strong><br>201 S Wilcox St, Castle Rock, CO');
 }
 
 function updateMapRoutes() {
